@@ -1,5 +1,5 @@
 Players = Players or {};
-local sinfar = {CO={}, Chat={}, Nil={}, Portraits={}, whospybubble=nil, Players=Players, chat=nil,CT = ColorToken.Create(), Control=nil, Sinfarian=false};
+local sinfar = {spytime=3, CO={}, Chat={}, Nil={}, Portraits={}, whospybubble=nil, Players=Players, chat=nil,CT = ColorToken.Create(), Control=nil, Sinfarian=false};
 
 function sinfar:Start(printfunc, db, chat, COMMANDS)
 	
@@ -44,6 +44,19 @@ function sinfar:Start(printfunc, db, chat, COMMANDS)
 	if COMMANDS then
 		COMMANDS:AddCommand("chatlog", function()
 			self:PopChatlog();
+		end);
+		
+		COMMANDS:AddCommand("whospy", function()
+			
+			if self.WHOSPY then 
+				self.WHOSPY = false;
+				self.Print("Whospy: OFF");
+			else 
+				self.WHOSPY = true;
+				self.Print("Whospy: ON");
+				self:SendWhoSpy();
+			end
+			
 		end);
 	end 
 end 
@@ -171,7 +184,7 @@ end
 
 function sinfar:WhoSpy(text)
 
-	if not WHOSPY then 
+	if not self.WHOSPY then 
 		return false;
 	end 
 
@@ -245,13 +258,16 @@ function sinfar:WhoSpy(text)
 
 		local x,y = NWN.GetSceneSize();
 		
-		if whospybubble then 
-			whospybubble:Destroy();
+		if self.whospybubble then 
+			self.whospybubble:Destroy();
 		end 
 		
 		if #hears > 0 then
-			whospybubble = TextBubble.Create(msg, 0, y-20);
-			whospybubble:Activate();
+			if METRICS then 
+				y = y-20;
+			end
+			self.whospybubble = TextBubble.Create(msg, 0, y);
+			self.whospybubble:Activate();
 		end
 		
 		return true;
@@ -764,11 +780,7 @@ function sinfar:LogChat(chat, type, playerId, resref)
 					
 					if not send.Text or send.Text == "" then 
 						
-						send.Text = (parts[1] or parts[2]):match(".-:%s(.-)");
-						
-						self.Print(parts[1]);
-						self.Print(parts[2]);
-						self.Print(send.Text);
+						return;
 					end
 					
 					local params = {};
@@ -879,6 +891,9 @@ function sinfar:UpdateInGameData(objid)
 	return co;
 end
 
+sinfar.whoTimer=Timer.New();
+sinfar.whoTimer:Start()
+
 function sinfar:Tick()
 
 	local dead = nil;
@@ -905,6 +920,25 @@ function sinfar:Tick()
 		for n=1, #dead do 
 			self.CO[dead[n]] = nil;
 		end
+	end
+	
+	if self.WHOSPY then
+
+		if self.spytime < 1 then 
+			self.spytime = 1;
+		end 
+
+		if self.whoTimer:Elapsed() > (self.spytime * 1000) then
+
+			self:SendWhoSpy();
+			
+			self.whoTimer:Stop();
+			self.whoTimer:Reset();
+			self.whoTimer:Start();
+		end
+	elseif self.whospybubble then 
+		self.whospybubble:Destroy();
+		self.whospybubble=nil;
 	end
 	
 	return count;

@@ -121,12 +121,9 @@ clearTimer:Start()
 local fpsTimer=Timer.New();
 fpsTimer:Start()
 
-local fpsbubble=nil;
-local membubble=nil;
-local cpububble=nil;
-local luamembubble=nil;
+local metricBubbles={};
+
 local proc = Process.Open();
-local spytime = 10;
 
 Hook.HookMainLoop(function()
 
@@ -160,55 +157,38 @@ Hook.HookMainLoop(function()
 	
 		local x,y = NWN.GetSceneSize();
 		
-		if fpsbubble then
-				fpsbubble:Destroy();
-			end
-		
-		if FPS then
-			fpsbubble = TextBubble.Create("FPS: "..NWN.GetFps(), 0, y);
-			fpsbubble:Activate();
+		if metricBubbles.fpsbubble then
+			metricBubbles.fpsbubble:Destroy();
+			metricBubbles.fpsbubble=nil;
 		end
 		
-		if membubble then
-			membubble:Destroy();
+		if metricBubbles.membubble then
+			metricBubbles.membubble:Destroy();
+			metricBubbles.membubble=nil;
 		end
-		
-		if MEM then		
-			membubble = TextBubble.Create("MEMORY: "..tostring(math.ceil(proc:GetRAM()/1024)).." kb", 175, y);
-			membubble:Activate();
-		end
-		
-		if cpububble then
-			cpububble:Destroy();
-		end
-		
-		if CPU then	
-			cpububble = TextBubble.Create("CPU: "..tostring(math.ceil(proc:GetCPU())).."%", 300, y);
-			cpububble:Activate();		
-		end
-		
-		if luamembubble then
-			luamembubble:Destroy();
-		end
-		
-		if LUAMEM then
-			luamembubble = TextBubble.Create("LUA: "..tostring(math.ceil(collectgarbage("count"))).." kb", 425, y);
-			luamembubble:Activate();		
-		end
-		
-		if not WHOSPY then 
-			whospybubble=nil;
-		else
-			spytime = spytime + 1;
 
-			if spytime >= 5 then
-				spytime = 0;
-				if SINFAR then
-					SINFAR:SendWhoSpy();
-				end
-			end
+		if metricBubbles.cpububble then
+			metricBubbles.cpububble:Destroy();
+			metricBubbles.cpububble=nil;
 		end
 		
+		if metricBubbles.luamembubble then
+			metricBubbles.luamembubble:Destroy();
+			metricBubbles.luamembubble=nil;
+		end
+		
+		if METRICS then
+			metricBubbles.cpububble = TextBubble.Create("CPU: "..tostring(math.ceil(proc:GetCPU())).."%", 300, y);
+			metricBubbles.luamembubble = TextBubble.Create("LUA: "..tostring(math.ceil(collectgarbage("count"))).." kb", 425, y);
+			metricBubbles.membubble = TextBubble.Create("MEMORY: "..tostring(math.ceil(proc:GetRAM()/1024)).." kb", 175, y);
+			metricBubbles.fpsbubble = TextBubble.Create("FPS: "..NWN.GetFps(), 0, y);
+			
+			metricBubbles.luamembubble:Activate();		
+			metricBubbles.cpububble:Activate();			
+			metricBubbles.membubble:Activate();		
+			metricBubbles.fpsbubble:Activate();				
+		end
+
 		fpsTimer:Stop();
 		fpsTimer:Reset();
 		fpsTimer:Start();
@@ -222,19 +202,11 @@ end);
 
 function ToggleAll()
 
-	if FPS then 
-		FPS = false;
-		MEM = false;
-		CPU = false;
-		WHOSPY = false;
-		LUAMEM = false;
+	if METRICS then 
+		METRICS = false;
 		Debug("Metrics: OFF");
 	else 
-		FPS = true;
-		MEM = true;
-		CPU = true;
-		WHOSPY = true;
-		LUAMEM = true;
+		METRICS = true;
 		Debug("Metrics: ON");
 	end
 end
