@@ -473,14 +473,15 @@ function sinfar:DownloadPortraitByResRef(resref)
 
 		local f = io.open(filename, "wb");
 		local buffer;
-		
+		local written = 0;
 		repeat
 		
-			buffer = raw:read(1000);
+			buffer = raw:read(1048576);
 			coroutine.yield();
 			if buffer and buffer:len() > 0 then 
 				f:write(buffer);
 				f:flush();
+				written = written + buffer:len();
 			end
 		
 		until buffer == nil;
@@ -489,7 +490,7 @@ function sinfar:DownloadPortraitByResRef(resref)
 		f:close();
 		raw:close();
 		
-		self.Print("Downloaded: " .. filename);
+		self.Print("Downloaded: " .. filename.. " "..tostring(written) .. " bytes");
 		
 		coroutine.yield();
 		
@@ -501,13 +502,12 @@ function sinfar:DownloadPortraitByResRef(resref)
 		
 		local entries = archive:Entries();
 		local file, size, data;
-		
+		local extracted = 0;
 		for n=1, #entries do 
 
 			file, size = archive:SetEntry(n)
-			entry = file:match(resref..".%.tga");
-		
-			if entry then 
+
+			if file:match(".+[hHlLmMsStT]%.[tT][gG][aA]$") then 
 				
 				self.Print("Extracting ".."./portraits/"..file);
 				
@@ -525,11 +525,15 @@ function sinfar:DownloadPortraitByResRef(resref)
 
 					f:close();
 					coroutine.yield();
+					extracted = extracted + 1;
 				end			
 			end 	
 		end
 		
-		self.Print("Extracted: " .. filename);
+		if extracted ~= 5 then
+			self.Print("Failed to extract all files: " .. filename);
+		end
+
 		archive:Close();
 		FileSystem.Delete(filename);
 		
@@ -608,9 +612,11 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 		end 
 	
 		local portrait = nil;
-	
+		local pcid = nil;
+		
 		if self.DB:Fetch() then 
 			portrait = self.DB:GetRow(1);
+			pcid =  self.DB:GetRow(2);
 		end
 	
 		if not portrait then 
@@ -624,19 +630,67 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 			self.CO[characterid] = portrait;
 			return;
 		end 
-					
+		
+		self.Print("Fallback download and convert jpg");
+		
 		update = self:DownloadPortraitByResRef(portrait);
 		
 		while coroutine.status(update) ~= "dead" do
 			coroutine.yield();
 		end
 
-		if NWN.UpdatePortraitResourceDirectory() then
+		if NWN.UpdatePortraitResourceDirectory() and self:HasPortraitResources(portrait) then
 			NWN.SetPortrait(obj.ObjectId, portrait);
-		else 
-			self.Portraits[characterid] = ori;
+			return;
 		end
+		
+		local query = "https://nwn.sinfar.net/getcharportrait.php?pc_id="..pcid.."&res=h";
+					
+		self.Print("Downloading: "..query);
+
+		local r = Http.Start("GET",query);
+		r:SetTimeout(300);
+
+		local IsRunning, status, runtime, recv, send = r:GetStatus();
+		while IsRunning do
+			coroutine.yield();
+			IsRunning, status, runtime, recv, send = r:GetStatus();
+		end	
+		
+		local code, ok, contents, header = r:GetResult()
+		
+		if code ~= 200 then 
+			self.Print("Failed: "..query.." "..tostring(code).." "..tostring(ok));
+			self.Portraits[characterid] = ori;
+			return;
+		end
+		
+		coroutine.yield();
+		
+		local f = io.open("./portraits/"..portrait..".jpg", "wb");
+		if not f then 
+			self.Print("Failed to open file for write ".."./portraits/"..portrait..".jpg");
+			self.Portraits[characterid] = ori;
+			return;
+		end
+		
+		f:write(contents);
+		f:flush();
+		f:close();
+	
+		coroutine.yield();
+	
+		if NWN.PortraitConvert(portrait) and self:HasPortraitResources(portrait) then 
+			NWN.SetPortrait(obj.ObjectId, portrait);
+			self.Print("Portrait converted: "..portrait);
+		else 	
+			self.Portraits[characterid] = ori;
+			self.Print("Failed to convert portrait "..portrait);
+		end
+		
+		FileSystem.Delete("./portraits/"..portrait..".jpg");
 	end);
+	
 	
 	self.CO[characterid] = co;
 	

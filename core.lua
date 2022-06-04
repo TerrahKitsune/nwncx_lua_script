@@ -129,8 +129,10 @@ Hook.HookMainLoop(function()
 
 	if clearTimer:Elapsed() > 3600000 then
 	
-		ResetColors(false);
-	
+		if CHAT then
+			CHAT:ResetColors(false);
+		end 
+		
 		clearTimer:Stop();
 		clearTimer:Reset();
 		clearTimer:Start();
