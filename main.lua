@@ -1,6 +1,7 @@
 FOLDER = "./lua/";
 Console.Create();
 Console.SetTitle("Neverwinter Nights")
+FileSystem.CreateDirectory(FOLDER);
 
 print = function(...)
 
