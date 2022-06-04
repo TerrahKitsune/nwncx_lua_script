@@ -1,6 +1,4 @@
 FOLDER = FOLDER or "";
-Console.Create();
-Console.SetTitle("Neverwinter Nights")
 local sqlite = SQLite.Open(FOLDER.."lua.sqlite", 1);
 sqlite:Query([[CREATE TABLE "colors" (
 	"Tag"	TEXT NOT NULL,

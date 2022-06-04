@@ -1,4 +1,6 @@
 FOLDER = "./lua/";
+Console.Create();
+Console.SetTitle("Neverwinter Nights")
 
 print = function(...)
 
@@ -42,12 +44,12 @@ local function Download(url, file)
 	end
 end
 
---Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua/main/core.lua?token=GHSAT0AAAAAABUJZAVF2PJZTG5TLQ7UGZTMYUYSXGQ", FOLDER.."core.lua");
---Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua/main/chat.lua?token=GHSAT0AAAAAABUJZAVEGJBVNPZQ5472PYRAYUYSXYA", FOLDER.."chat.lua");
---Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua/main/color.lua?token=GHSAT0AAAAAABUJZAVFAJ65ULA6VO7U6GOIYUYSYDQ", FOLDER.."color.lua");
---Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua/main/commands.lua?token=GHSAT0AAAAAABUJZAVFMSVSPLJCXEA3UZWAYUYSYOQ", FOLDER.."commands.lua");
---Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua/main/console.lua?token=GHSAT0AAAAAABUJZAVEKL6UAO37DND2FYQUYUYSYZQ", FOLDER.."console.lua");
---Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua/main/sinfar.lua?token=GHSAT0AAAAAABUJZAVFIMMOYVLCC6LQCSAOYUYSZXQ", FOLDER.."sinfar.lua");
---Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua/main/main.lua?token=GHSAT0AAAAAABUJZAVFDF6I2O3JDUUBYAFWYUYSZGQ", "main.lua");
+Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/core.lua", FOLDER.."core.lua");
+Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/chat.lua", FOLDER.."chat.lua");
+Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/color.lua", FOLDER.."color.lua");
+Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/commands.lua", FOLDER.."commands.lua");
+Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/console.lua", FOLDER.."console.lua");
+Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/sinfar.lua", FOLDER.."sinfar.lua");
+Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/main.lua", "main.lua");
 
 dofile(FOLDER.."core.lua");
