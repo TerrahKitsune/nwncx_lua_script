@@ -627,7 +627,7 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 	
 		if self:HasPortraitResources(portrait) then 
 			NWN.SetPortrait(obj.ObjectId, portrait);
-			self.CO[characterid] = portrait;
+			self.Portraits[characterid] = portrait;
 			return;
 		end 
 		
@@ -705,7 +705,6 @@ function sinfar:LogChat(chat, type, playerId, resref)
 		type ~= 64 and 
 		type ~= 1024 then 
 
-		print("Skip message with type "..type);
 		return;
 	elseif not self:IsSinfar() then 
 		self.Print("LogChat: not sinfar");
