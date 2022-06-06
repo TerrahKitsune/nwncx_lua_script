@@ -1,3 +1,4 @@
+local allowUpdate = true;
 FOLDER = "./lua/";
 Console.Create();
 Console.SetTitle("Neverwinter Nights")
@@ -44,13 +45,14 @@ local function Download(url, file)
 		print("Query failed "..tostring(url).." "..tostring(code).." "..tostring(ok));
 	end
 end
-
-Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/core.lua", FOLDER.."core.lua");
-Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/chat.lua", FOLDER.."chat.lua");
-Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/color.lua", FOLDER.."color.lua");
-Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/commands.lua", FOLDER.."commands.lua");
-Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/console.lua", FOLDER.."console.lua");
-Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/sinfar.lua", FOLDER.."sinfar.lua");
-Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/main.lua", "main.lua");
+if allowUpdate then
+	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/core.lua", FOLDER.."core.lua");
+	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/chat.lua", FOLDER.."chat.lua");
+	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/color.lua", FOLDER.."color.lua");
+	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/commands.lua", FOLDER.."commands.lua");
+	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/console.lua", FOLDER.."console.lua");
+	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/sinfar.lua", FOLDER.."sinfar.lua");
+	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/main.lua", "main.lua");
+end 
 
 dofile(FOLDER.."core.lua");
