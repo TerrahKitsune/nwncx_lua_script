@@ -1,10 +1,5 @@
 FOLDER = FOLDER or "";
 local sqlite = SQLite.Open(FOLDER.."lua.sqlite", 1);
-sqlite:Query([[CREATE TABLE "colors" (
-	"Tag"	TEXT NOT NULL,
-	"Color"	TEXT NOT NULL,
-	PRIMARY KEY("Tag")
-);]]);
 
 math.randomseed(os.time());
 math.random();math.random();math.random();

@@ -343,6 +343,13 @@ function CHAT:Start(db, sinfar, console)
 	self.console = console;
 	self.sinfar = sinfar;
 	self.sqlite = db;
+	
+	db:Query([[CREATE TABLE "colors" (
+	"Tag"	TEXT NOT NULL,
+	"Color"	TEXT NOT NULL,
+	"Lock"	INTEGER NOT NULL,
+	PRIMARY KEY("Tag")
+)]]);
 end
 
 return CHAT;
