@@ -209,7 +209,7 @@ function ToggleAll()
 end
 
 if COMMANDS then
-	COMMANDS:AddCommand("metrics", ToggleAll);
+	COMMANDS:AddCommand("metrics", ToggleAll, "Toggle metrics");
 end 
 
 local function GameObjectArrayUpdate(data)
@@ -350,7 +350,7 @@ if not HASPRINTED then
 end 
 
 if CHAT then 
-	CHAT:Start(sqlite, SINFAR, CONSOLE);
+	CHAT:Start(sqlite, SINFAR, CONSOLE, COMMANDS);
 end
 
 if COMMANDS then 

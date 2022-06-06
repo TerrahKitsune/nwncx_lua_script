@@ -1,6 +1,10 @@
 local COMMANDS = {cmd={}, chat=nil, Print=nil};
 
-COMMANDS.cmd["lua"] = function(param)
+function COMMANDS:AddCommand(cmd, func, desc)
+	self.cmd[cmd] = {f=func, d=desc};
+end
+
+COMMANDS:AddCommand("lua", function(param)
 	local ok, err = load(param);
 	if not ok then 
 		error(err);
@@ -17,16 +21,22 @@ COMMANDS.cmd["lua"] = function(param)
 			COMMANDS.Print(err);
 		end
 	end 
-end
+end,
+"runs provided lua script");
 
-COMMANDS.cmd["reload"] = function() 
+COMMANDS:AddCommand("reload", function() 
 	dofile(FOLDER.."core.lua"); 
 	Debug("Reloaded"); 
-end
+end,
+"reloads the lua scripts");
 
-function COMMANDS:AddCommand(cmd, func)
-	COMMANDS.cmd[cmd] = func;
-end
+COMMANDS:AddCommand("help", function() 
+	
+	for k,v in pairs(COMMANDS.cmd)do 
+		Debug("/"..k.." - "..tostring(v.d));
+	end
+end,
+"this command");
 
 function COMMANDS:DoCommand(str)
 
@@ -42,15 +52,15 @@ function COMMANDS:DoCommand(str)
 			command = command:gsub("%s", "");
 		end
 		
-		local func = self.cmd[command:lower()];	
+		local cmd = self.cmd[command:lower()];	
 		
-		if func then
+		if cmd and cmd.f then
 		
 			param = param or "";
 		
 			print("Command: "..command .. " " .. param);
 		
-			local ok, err = pcall(func, param);
+			local ok, err = pcall(cmd.f, param);
 			if not ok then 
 				if self.chat then
 					self.chat:NWNPrint("Error: "..err);

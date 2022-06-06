@@ -44,7 +44,7 @@ function sinfar:Start(printfunc, db, chat, COMMANDS)
 	if COMMANDS then
 		COMMANDS:AddCommand("chatlog", function()
 			self:PopChatlog();
-		end);
+		end, "Pops open a chatlog");
 		
 		COMMANDS:AddCommand("whospy", function()
 			
@@ -55,9 +55,8 @@ function sinfar:Start(printfunc, db, chat, COMMANDS)
 				self.WHOSPY = true;
 				self.Print("Whospy: ON");
 				self:SendWhoSpy();
-			end
-			
-		end);
+			end			
+		end, "Toggles auto whospy");
 	end 
 end 
 

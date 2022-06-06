@@ -338,7 +338,7 @@ function CHAT:NWNPrint(text)
 	self:DoPrint("<c"..string.char(254,1,254)..">**Lua:** "..text.."</c>", 32, "", 0, false);
 end
 
-function CHAT:Start(db, sinfar, console)
+function CHAT:Start(db, sinfar, console, commands)
 
 	self.console = console;
 	self.sinfar = sinfar;
@@ -350,6 +350,12 @@ function CHAT:Start(db, sinfar, console)
 	"Lock"	INTEGER NOT NULL,
 	PRIMARY KEY("Tag")
 )]]);
+
+	commands:AddCommand("resetcolor", function(param) 
+		self:SetNameColor(param);
+		Debug("Reset color for "..param);
+	end, "Resets the color for a given name");
+
 end
 
 return CHAT;
