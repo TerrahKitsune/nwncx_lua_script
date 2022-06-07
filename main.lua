@@ -52,6 +52,7 @@ if allowUpdate then
 	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/commands.lua", FOLDER.."commands.lua");
 	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/console.lua", FOLDER.."console.lua");
 	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/sinfar.lua", FOLDER.."sinfar.lua");
+	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/globalvar.lua", FOLDER.."globalvar.lua");
 	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/main.lua", "main.lua");
 end 
 

@@ -629,9 +629,7 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 			self.Portraits[characterid] = portrait;
 			return;
 		end 
-		
-		self.Print("Fallback download and convert jpg");
-		
+
 		update = self:DownloadPortraitByResRef(portrait);
 		
 		while coroutine.status(update) ~= "dead" do
@@ -642,6 +640,8 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 			NWN.SetPortrait(obj.ObjectId, portrait);
 			return;
 		end
+		
+		self.Print("Fallback download and convert jpg");
 		
 		local query = "https://nwn.sinfar.net/getcharportrait.php?pc_id="..pcid.."&res=h";
 					

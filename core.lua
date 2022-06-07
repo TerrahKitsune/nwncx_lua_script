@@ -8,6 +8,7 @@ CONSOLE = dofile(FOLDER.."console.lua");
 SINFAR = dofile(FOLDER.."sinfar.lua");
 CHAT = dofile(FOLDER.."chat.lua");
 COMMANDS = dofile(FOLDER.."commands.lua");
+VARS = dofile(FOLDER.."globalvar.lua");
 
 function PrintAll(tbl, depth, alreadyprinted)
 
@@ -347,6 +348,10 @@ end
 if not HASPRINTED then 
 	PrintAll(_G);
 	HASPRINTED=true;
+end 
+
+if VARS then
+	VARS:Start(sqlite);
 end 
 
 if CHAT then 
