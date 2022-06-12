@@ -108,10 +108,19 @@ function CHAT:HandleJoinLeave(ct)
 	
 		local isReal = self:IsIdPlayer(ply.ObjectId);
 		local color = "<c"..string.char(128,128,254)..">";
+		local isWebclient = false;
 		
-		if not isReal then 
-			client = "a fake";
+		if not isReal then
+		
+			if ply.CharacterName == ply.Name then
+				client = "a webclient";
+				isWebclient=true;
+			else 
+				client = ply.CharacterName;
+			end
+			
 			color = "<c"..string.char(195,195,195)..">";
+			
 		elseif client == "player" and ply.CharacterName then 
 			client = self:GetNameColor(ply.CharacterName)..ply.CharacterName.."</c>";
 		else 
@@ -120,10 +129,29 @@ function CHAT:HandleJoinLeave(ct)
 	
 		if joinleave == "joined" then
 			
-			ct:Parse(color..ply.Name.." has joined as "..client.."</c>");
+			if isWebclient then 
+			
+				if self.WebNoteDisable then
+					ct:Parse("");
+				else
+					ct:Parse(color..ply.Name.." joined webclient</c>");
+				end
+			else	
+				ct:Parse(color..ply.Name.." has joined as "..client.."</c>");
+			end
+			
 		elseif joinleave == "left" then
 		
-			ct:Parse(color..ply.Name.." has left as "..client.."</c>");
+			if isWebclient then 
+				
+				if self.WebNoteDisable then
+					ct:Parse("");
+				else
+					ct:Parse(color..ply.Name.." left webclient</c>");
+				end
+			else
+				ct:Parse(color..ply.Name.." has left as "..client.."</c>");
+			end
 		end
 	end
 end
@@ -329,7 +357,11 @@ function CHAT:DoPrint(text, type, resref, playerId, isPlayer)
 		self.sinfar:LogChat(self.CT, type, nil, resref:sub(1, resref:len()-1));
 	end
 	
-	NWN.AppendTobuffer(self.CT:ToString(), type, resref, playerId, isPlayer);
+	local text = self.CT:ToString();
+	
+	if text and text ~= "" then
+		NWN.AppendTobuffer(text, type, resref, playerId, isPlayer);
+	end 
 	
 	return false;
 end
@@ -355,7 +387,16 @@ function CHAT:Start(db, sinfar, console, commands)
 		self:SetNameColor(param);
 		Debug("Reset color for "..param);
 	end, "Resets the color for a given name");
-
+	
+	commands:AddCommand("skipweb", function(param) 
+		if self.WebNoteDisable then 
+			Debug("Enabled webclient join/leave messages");
+			self.WebNoteDisable = false;
+		else
+			Debug("Disabled webclient join/leave messages");
+			self.WebNoteDisable = true;
+		end
+	end, "Toggles webclietn join/leave messages");
 end
 
 return CHAT;

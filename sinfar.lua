@@ -42,9 +42,9 @@ function sinfar:Start(printfunc, db, chat, COMMANDS)
 	self.Print = printfunc;
 	
 	if COMMANDS then
-		COMMANDS:AddCommand("chatlog", function()
-			self:PopChatlog();
-		end, "Pops open a chatlog");
+		COMMANDS:AddCommand("chatlog", function(param)
+			self:PopChatlog(param);
+		end, "Pops open a chatlog, param is the number of records default 100. 0 = all.");
 		
 		COMMANDS:AddCommand("whospy", function()
 			
@@ -60,25 +60,45 @@ function sinfar:Start(printfunc, db, chat, COMMANDS)
 	end 
 end 
 
-function sinfar:PopChatlog()
+function sinfar:PopChatlog(param)
 
+	param = tonumber(param);
+	
+	if type(param) ~= "number" then 
+		param = 100;
+	end
+	
 	local co = self.CO["PopChatlog"];
 	
 	if not co or coroutine.status(co) == "dead" then 
 	
 		co = coroutine.create(function ()
 			
-			local ok, err = self.DB:Query("select count(*) as `cnt` from chat;");
+			local db = tostring(self.DB):match(".-File: (.-)$");
+			
+			db = assert(SQLite.Open(db, 1));
+			
+			local ok, err = db:Query("select count(*) as `cnt` from chat;");
 		
 			if not ok then 
 				self.Print(err);
 				return;
-			elseif not self.DB:Fetch() then		
+			elseif not db:Fetch() then		
 				self.Print("Failed to fetch count");
 				return;
 			end 
 			
-			local count = self.DB:GetRow(1);
+			local count = db:GetRow(1);
+			
+			if type(param) == "number" then 
+				param = math.floor(param);
+			else 
+				param = 0;
+			end 
+			
+			if param > 0 and param < count then 
+				count = param;
+			end
 			
 			self.Print("Fetching "..tostring(count).." chatlogs");
 		
@@ -89,7 +109,7 @@ function sinfar:PopChatlog()
 		
 			coroutine.yield();
 		
-			ok, err = self.DB:Query("select Data, '[' || datetime(Timestamp, 'unixepoch', 'localtime') || ']' from chat order by Timestamp desc;");
+			ok, err = db:Query("select Data, '[' || datetime(Timestamp, 'unixepoch', 'localtime') || ']' from chat order by Timestamp desc limit "..tostring(count)..";");
 		
 			if not ok then
 				self.Print(err);
@@ -98,10 +118,11 @@ function sinfar:PopChatlog()
 			
 			local txt = "";
 			local data;
+			local nth = 0;
 			
-			while self.DB:Fetch() do 
+			while db:Fetch() do 
 			
-				data = j:Decode(self.DB:GetRow(1));
+				data = j:Decode(db:GetRow(1));
 			
 				if data then
 				
@@ -111,11 +132,20 @@ function sinfar:PopChatlog()
 					data.NameToken = data.NameToken or self.chat:GetNameColor(data.Name) or defaultToken;
 					data.TextToken = data.TextToken or defaultToken;		
 					
-					txt = txt .. (self.DB:GetRow(2) or "[-]") .. " " .. data.NameToken ..data.Name..":</c>"..data.TextToken.." ["..data.Channel.."] "..data.TextToken..data.Text .."</c></c>\n\n";
+					txt = txt .. (db:GetRow(2) or "[-]") .. " " .. data.NameToken ..data.Name..":</c>"..data.TextToken.." ["..data.Channel.."] "..data.TextToken..data.Text .."</c></c>\n\n";
+				
+					nth = nth + 1;
+				
+					if nth >= 100 then
+						coroutine.yield();
+						nth = 0;
+					end
 				end
 			end
 			
 			coroutine.yield();
+		
+			db:Close();
 		
 			TextBox(txt);
 		end);
