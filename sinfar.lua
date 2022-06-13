@@ -867,14 +867,16 @@ function sinfar:LogChat(chat, type, playerId, resref)
 					
 					if not send.Name or send.Name == "" then 
 						send.Name = self.Nil;
-						self.Print(parts[1]);
-						self.Print(parts[2]);
+						--self.Print(parts[1]);
+						--self.Print(parts[2]);
+						send.Text="";
 					end
 					
 					if not send.Channel or send.Channel == "" then 
 						send.Channel = self.Nil;
-						self.Print(parts[1]);
-						self.Print(parts[2]);
+						--self.Print(parts[1]);
+						--self.Print(parts[2]);
+						send.Text="";
 					end
 					
 					if not send.Player then 
