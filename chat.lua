@@ -196,6 +196,8 @@ function CHAT:SetNameColor(name, r,g,b, lock)
 		error(err);
 	end 
 	
+	self.savedColors = {};
+	
 	self.savedColors[name] = "<c"..string.char(r,g,b)..">";
 	
 	if DEBUG then
@@ -205,7 +207,7 @@ function CHAT:SetNameColor(name, r,g,b, lock)
 	return self.savedColors[name];
 end
 
-function CHAT:GetNameColor(name)
+function CHAT:GetNameColor(name, recurse)
 
 	name = self:ToNameTag(name);
 
@@ -221,14 +223,62 @@ function CHAT:GetNameColor(name)
 	elseif self.sqlite:Fetch() then 
 		local j=Json.Create();
 		local color = j:Decode(self.sqlite:GetRow(1));
+		
+		if type(color.Link) == "string" and color.Link ~= "" then 
+			
+			recurse = recurse or {};
+			
+			if not recurse[color.Link] then 	
+				recurse[color.Link] = color;
+				self.savedColors[name] = self:GetNameColor(color.Link, recurse);
+				return self.savedColors[name];
+			end
+		end
+		
 		self.savedColors[name] = self:RgbTableToTag(color);
+		
 		if DEBUG then
 			Debug(name.." loaded color "..self.savedColors[name]..self:TagToReadable(self.savedColors[name]).."</c>");
 		end
+		
 		return self.savedColors[name];
 	end
 
 	return self:SetNameColor(name, self:CreateColor(name));
+end
+
+function CHAT:SetLink(child, parent)
+
+	if not child or child == "" then 
+		self.savedColors={};
+		return true;
+	end
+
+	child = self:ToNameTag(child);
+
+	local ok, err = assert(self.sqlite:Query("select `Color` from `Colors` where `Tag`=@tag;",{tag=child}));
+
+	if not self.sqlite:Fetch() then 
+		return false;
+	end 
+	
+	local j=Json.Create();
+	local color = j:Decode(self.sqlite:GetRow(1));
+	
+	if parent then
+		color.Link = self:ToNameTag(parent);
+	else 
+		color.Link = nil;
+	end
+	
+	ok, err = assert(self.sqlite:Query("update `Colors` set `Color`=@c where `Tag`=@tag;",{c=j:Encode(color), tag=child}));
+	
+	if ok then
+		self.savedColors={};
+		return true;
+	end 
+	
+	return false;
 end
 
 function CHAT:RgbTableToTag(color)
@@ -387,6 +437,27 @@ function CHAT:Start(db, sinfar, console, commands)
 		self:SetNameColor(param);
 		Debug("Reset color for "..param);
 	end, "Resets the color for a given name");
+	
+	commands:AddCommand("linkcolor", function(param) 
+		
+		local a, b = param:match("(.-)%s(.+)");
+		
+		if not a then 
+			a = param or "";
+		end 
+		
+		if a:len() == 0 then 
+			Debug("Useage: /linkcolor nametolinkwithoutspace linktowithoutspace");
+			return;
+		end 
+		
+		if not b then 
+			Debug("Unlinking "..a..": "..tostring(self:SetLink(a)));
+		else 
+			Debug("Linking "..a.." -> "..b..": "..tostring(self:SetLink(a, b)));
+		end
+			
+	end, "Links a to b, names given without spaces or unlinks if b is not given");
 	
 	commands:AddCommand("skipweb", function(param) 
 		if self.WebNoteDisable then 

@@ -43,8 +43,12 @@ function sinfar:Start(printfunc, db, chat, COMMANDS)
 	
 	if COMMANDS then
 		COMMANDS:AddCommand("chatlog", function(param)
-			self:PopChatlog(param);
+			self:PopChatlog(param, false);
 		end, "Pops open a chatlog, param is the number of records default 100. 0 = all.");
+		
+		COMMANDS:AddCommand("exportchatlog", function(param)
+			self:PopChatlog(param, true);
+		end, "Exports the chatlog, param is the number of records default 100. 0 = all.");
 		
 		COMMANDS:AddCommand("whospy", function()
 			
@@ -60,7 +64,7 @@ function sinfar:Start(printfunc, db, chat, COMMANDS)
 	end 
 end 
 
-function sinfar:PopChatlog(param)
+function sinfar:PopChatlog(param, tofile)
 
 	param = tonumber(param);
 	
@@ -100,8 +104,16 @@ function sinfar:PopChatlog(param)
 				count = param;
 			end
 			
-			self.Print("Fetching "..tostring(count).." chatlogs");
-		
+			local f = nil;
+			
+			if tofile then
+				self.Print("Exporting "..tostring(count).." chatlogs to "..FOLDER.."chatlog.txt");
+				
+				f = assert(io.open(FOLDER.."chatlog.txt", "w"));		
+			else 
+				self.Print("Fetching "..tostring(count).." chatlogs");
+			end 
+			
 			coroutine.yield();
 		
 			local j = Json.Create();
@@ -132,13 +144,20 @@ function sinfar:PopChatlog(param)
 					data.NameToken = data.NameToken or self.chat:GetNameColor(data.Name) or defaultToken;
 					data.TextToken = data.TextToken or defaultToken;		
 					
-					txt = txt .. (db:GetRow(2) or "[-]") .. " " .. data.NameToken ..data.Name..":</c>"..data.TextToken.." ["..data.Channel.."] "..data.TextToken..data.Text .."</c></c>\n\n";
-				
+					if f then
+						f:write((db:GetRow(2) or "[-]") .. " " ..data.Name..": ["..data.Channel.."] "..data.Text .."\n\n");
+					else
+						txt = txt .. (db:GetRow(2) or "[-]") .. " " .. data.NameToken ..data.Name..":</c>"..data.TextToken.." ["..data.Channel.."] "..data.TextToken..data.Text .."</c></c>\n\n";
+					end
+					
 					nth = nth + 1;
 				
-					if nth >= 100 then
-						coroutine.yield();
+					if nth >= 100 then		
+						if f then
+							f:flush();
+						end
 						nth = 0;
+						coroutine.yield();
 					end
 				end
 			end
@@ -147,7 +166,13 @@ function sinfar:PopChatlog(param)
 		
 			db:Close();
 		
-			TextBox(txt);
+			if f then 
+				f:flush();
+				f:close();
+				Debug("Chatlog export finished");
+			else		
+				TextBox(txt);
+			end
 		end);
 		
 		self.CO["PopChatlog"] = co;
