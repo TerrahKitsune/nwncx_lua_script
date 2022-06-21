@@ -210,9 +210,9 @@ end
 function CHAT:LocalJoinLeave(ply, add)
 
 	if add then 
-		Debug(self:GetNameColor(ply.CharacterName)..ply.CharacterName.."</c> joined local");
+		self:DoPrint(self:GetNameColor(ply.CharacterName)..ply.CharacterName.."</c> joined local", 32, "", 0, false);
 	else 
-		Debug(self:GetNameColor(ply.CharacterName)..ply.CharacterName.."</c> left local");
+		self:DoPrint(self:GetNameColor(ply.CharacterName)..ply.CharacterName.."</c> left local", 32, "", 0, false);
 	end 
 end
 
