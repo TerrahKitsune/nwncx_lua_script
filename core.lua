@@ -247,12 +247,17 @@ local function GameObjectArrayUpdate(data)
 					SINFAR:UpdateInGameData(obj.Id);
 				end
 				
-				Debug("Add "..obj.Name.." ("..ply.Name..")");
+				if CHAT then 
+					CHAT:LocalJoinLeave(ply, true);
+				end
 			else 
 				if SINFAR then
 					SINFAR:RemovePlayer(ply);
 				end
-				Debug("Remove "..obj.Name.." ("..ply.Name..")");
+				
+				if CHAT then 
+					CHAT:LocalJoinLeave(ply, false);
+				end
 			end
 		end
 	end
@@ -344,11 +349,6 @@ b = function(str)
 	
 	return bubble;
 end
-
-if not HASPRINTED then 
-	PrintAll(_G);
-	HASPRINTED=true;
-end 
 
 if VARS then
 	VARS:Start(sqlite);

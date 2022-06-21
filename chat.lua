@@ -207,6 +207,15 @@ function CHAT:SetNameColor(name, r,g,b, lock)
 	return self.savedColors[name];
 end
 
+function CHAT:LocalJoinLeave(ply, add)
+
+	if add then 
+		Debug(self:GetNameColor(ply.CharacterName)..ply.CharacterName.."</c> joined local";);
+	else 
+		Debug(self:GetNameColor(ply.CharacterName)..ply.CharacterName.."</c> left local";);
+	end 
+end
+
 function CHAT:GetNameColor(name, recurse)
 
 	name = self:ToNameTag(name);
@@ -372,8 +381,6 @@ function CHAT:ResetColors(del)
 	if del then
 		sqlite:Query("delete from `Colors` where Lock=0;");
 	end
-	
-	Debug("Reset colors");
 end
 
 function CHAT:DoPrint(text, type, resref, playerId, isPlayer)

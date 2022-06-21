@@ -45,15 +45,48 @@ local function Download(url, file)
 		print("Query failed "..tostring(url).." "..tostring(code).." "..tostring(ok));
 	end
 end
+
+local function GetRemoteVersion()
+
+	local r = Http.Start("GET", "https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/ver.txt");
+	r:SetTimeout(5);
+	
+	local code, ok, contents, header = r:GetResult();
+	
+	if code == 200 then 
+		return contents;
+	end 
+	
+	return nil;
+end
+
+local function DoUpdateCheck()
+
+	local remVer = GetRemoteVersion();
+
+	if remVer == nil then 
+		print("Unable to get remote version");
+		return;
+	end
+
+	if GetVersion() == remVer then
+		Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/core.lua", FOLDER.."core.lua");
+		Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/chat.lua", FOLDER.."chat.lua");
+		Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/color.lua", FOLDER.."color.lua");
+		Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/commands.lua", FOLDER.."commands.lua");
+		Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/console.lua", FOLDER.."console.lua");
+		Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/sinfar.lua", FOLDER.."sinfar.lua");
+		Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/globalvar.lua", FOLDER.."globalvar.lua");
+		Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/main.lua", "main.lua");
+		NEEDSUPDATE=false;
+	else
+		NEEDSUPDATE=true;
+		print("New version "..remVer.." available");
+	end
+end
+
 if allowUpdate then
-	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/core.lua", FOLDER.."core.lua");
-	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/chat.lua", FOLDER.."chat.lua");
-	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/color.lua", FOLDER.."color.lua");
-	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/commands.lua", FOLDER.."commands.lua");
-	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/console.lua", FOLDER.."console.lua");
-	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/sinfar.lua", FOLDER.."sinfar.lua");
-	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/globalvar.lua", FOLDER.."globalvar.lua");
-	Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/main.lua", "main.lua");
+	DoUpdateCheck();
 end 
 
 dofile(FOLDER.."core.lua");
