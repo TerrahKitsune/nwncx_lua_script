@@ -175,6 +175,11 @@ Hook.HookMainLoop(function()
 			metricBubbles.luamembubble=nil;
 		end
 		
+		if metricBubbles.posbubble then
+			metricBubbles.posbubble:Destroy();
+			metricBubbles.posbubble=nil;
+		end
+		
 		if METRICS then
 			metricBubbles.cpububble = TextBubble.Create("CPU: "..tostring(math.ceil(proc:GetCPU())).."%", 300, y);
 			metricBubbles.luamembubble = TextBubble.Create("LUA: "..tostring(math.ceil(collectgarbage("count"))).." kb", 425, y);
@@ -184,7 +189,14 @@ Hook.HookMainLoop(function()
 			metricBubbles.luamembubble:Activate();		
 			metricBubbles.cpububble:Activate();			
 			metricBubbles.membubble:Activate();		
-			metricBubbles.fpsbubble:Activate();				
+			metricBubbles.fpsbubble:Activate();
+
+			local obj = NWN.GetGameObject();
+			
+			if obj then 
+				metricBubbles.posbubble = TextBubble.Create("x: "..tostring(math.floor(obj.Position.x+0.5)).." y: "..tostring(math.floor(obj.Position.y+0.5)), 550, y);
+				metricBubbles.posbubble:Activate();
+			end
 		end
 
 		fpsTimer:Stop();
@@ -290,7 +302,6 @@ Hook.HookSetPlayerCreature(function(objid)
 	end 
 
 	print("Control: "..msg);
-	Debug("Control: "..msg);
 end);
 
 t = function()
