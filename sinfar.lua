@@ -171,7 +171,7 @@ function sinfar:PopChatlog(param, tofile)
 				f:close();
 				Debug("Chatlog export finished");
 			else		
-				TextBox(txt);
+				NWN.TextBox(txt);
 			end
 		end);
 		
