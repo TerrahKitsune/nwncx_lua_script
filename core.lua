@@ -69,7 +69,24 @@ Hook.HookAppendToBuffer(function(text, type, resref, playerId, isPlayer)
 	end
 end);
 
+function Notification(text)
+
+	local obj = NWN.GetGameObject();
+
+	if not obj then 
+		obj = {Portrait="po_hu_f_99_"};
+	end
+
+	NWN.AppendTobuffer("<c"..string.char(254,1,254)..">LUA: </c><c"..string.char(127,254,254)..">"..tostring(text).."</c>", 1024, obj.Portrait.."t", 0, true);
+end
+
 Hook.HookParseChatString(function(text, type)
+
+	if NEEDSUPDATE then 
+		
+		Notification("Update available v"..NEEDSUPDATE..": https://github.com/TerrahKitsune/nwncx_lua_script/raw/main/nwnx_lua.zip");
+		NEEDSUPDATE = nil;
+	end 
 
 	if COMMANDS then 
 		return COMMANDS:DoCommand(text);
@@ -244,7 +261,9 @@ local function GameObjectArrayUpdate(data)
 		msg = "REMOVE ";
 	end
 
-	msg = msg .. obj.Id.." ["..obj.Type.."]: "..obj.Name
+	obj.Name = obj.Name or "";
+
+	msg = msg .. obj.Id.." ["..obj.Type.."]: "..obj.Name;
 	
 	print(msg);
 	if obj.Type == "creature" then

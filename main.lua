@@ -78,10 +78,10 @@ local function DoUpdateCheck()
 		Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/sinfar.lua", FOLDER.."sinfar.lua");
 		Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/globalvar.lua", FOLDER.."globalvar.lua");
 		Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/main.lua", "main.lua");
-		NEEDSUPDATE=false;
+
 		print("Plugin is up to date v"..remVer);
 	else
-		NEEDSUPDATE=true;
+		NEEDSUPDATE=remVer;
 		print("New version v"..remVer.." available");
 	end
 end
