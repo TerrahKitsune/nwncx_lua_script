@@ -194,7 +194,7 @@ Hook.HookMainLoop(function()
 			local obj = NWN.GetGameObject();
 			
 			if obj then 
-				metricBubbles.posbubble = TextBubble.Create("x: "..tostring(math.floor(obj.Position.x+0.5)).." y: "..tostring(math.floor(obj.Position.y+0.5)), 550, y);
+				metricBubbles.posbubble = TextBubble.Create("x: "..tostring(math.floor(obj.Position.x+0.5)).." y: "..tostring(math.floor(obj.Position.y+0.5)).." f: "..NWN.Direction(math.floor((obj.Orientation or 0)+0.5)), 550, y);
 				metricBubbles.posbubble:Activate();
 			end
 		end
@@ -304,6 +304,10 @@ Hook.HookSetPlayerCreature(function(objid)
 	print("Control: "..msg);
 end);
 
+Hook.HookLoadArea(function(area)
+	Debug(area);
+end);
+
 t = function()
 	local ids = NWN.GetAllGameObjectIds(); 
 	local text = "";
@@ -330,7 +334,11 @@ end
 
 a = function()
 	
-	Debug(NWN.GetPlayer());
+	local obj = NWN.GetGameObject();
+	
+	Debug(obj);
+	Debug(obj.Position.z);
+	Debug(NWN.GetSurfaceHeight(obj.Position.x, obj.Position.y));
 end
 
 b = function(str)
@@ -359,6 +367,29 @@ b = function(str)
 	tk=bubble;
 	
 	return bubble;
+end
+
+NWN.Direction = function(fAngle)
+
+	if fAngle >= 0.0 and fAngle <= 45 then
+        return "East";
+	elseif fAngle > 45.0 and fAngle <= 90.0 then
+        return "North East";
+    elseif fAngle > 90.0 and fAngle <= 135.0 then
+        return "North";
+	elseif fAngle > 135.0 and fAngle <= 180.0 then
+        return "North West";
+    elseif fAngle > 180.0 and fAngle <= 225.0 then
+        return "West";
+	elseif fAngle > 225.0 and fAngle <= 270.0 then
+        return "South West";
+    elseif fAngle > 270.0 and fAngle <= 315.0 then
+        return "South";
+	elseif fAngle > 315.0 and fAngle <= 360.0 then
+        return "South East";
+	end 
+	
+    return "East";
 end
 
 if VARS then

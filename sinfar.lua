@@ -693,6 +693,7 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 
 		if NWN.UpdatePortraitResourceDirectory() and self:HasPortraitResources(portrait) then
 			NWN.SetPortrait(obj.ObjectId, portrait);
+			self.Portraits[characterid] = portrait;
 			return;
 		end
 		
@@ -736,6 +737,7 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 	
 		if NWN.PortraitConvert(portrait) and self:HasPortraitResources(portrait) then 
 			NWN.SetPortrait(obj.ObjectId, portrait);
+			self.Portraits[characterid] = portrait;
 			self.Print("Portrait converted: "..portrait);
 		else 	
 			self.Portraits[characterid] = ori;
