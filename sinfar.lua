@@ -145,7 +145,10 @@ function sinfar:PopChatlog(param, tofile)
 					data.TextToken = data.TextToken or defaultToken;		
 					
 					if f then
-						f:write((db:GetRow(2) or "[-]") .. " " ..data.Name..": ["..data.Channel.."] "..data.Text .."\n\n");
+					
+						data.Area = data.Area or "Unknown Area";
+					
+						f:write((db:GetRow(2) or "[-]") .. " [".. data.Area .."] " ..data.Name..": ["..data.Channel.."] "..data.Text .."\n\n");
 					else
 						txt = txt .. (db:GetRow(2) or "[-]") .. " " .. data.NameToken ..data.Name..":</c>"..data.TextToken.." ["..data.Channel.."] "..data.TextToken..data.Text .."</c></c>\n\n";
 					end
@@ -621,13 +624,18 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 	
 		local row = self.DB:GetRow();
 	
-		if row.Julianday < 2 and self:HasPortraitResources(row.Portrait) then
+		if self:HasPortraitResources(row.Portrait) then
+	
+			if row.Julianday < 2 then
 
-			if self:IsPortraitUnknown(ori) and not self:IsPortraitUnknown(row.Portrait) then
-				NWN.SetPortrait(obj.ObjectId, row.Portrait);
-				return row.Portrait;
-			else 
-				return ori;
+				if self:IsPortraitUnknown(ori) and not self:IsPortraitUnknown(row.Portrait) then
+					NWN.SetPortrait(obj.ObjectId, row.Portrait);
+					return row.Portrait;
+				else 
+					return ori;
+				end
+			else
+				ori = row.Portrait;
 			end
 		end
 	end
@@ -894,6 +902,13 @@ function sinfar:LogChat(chat, type, playerId, resref)
 						return;
 					end
 					
+					local area = NWN.GetArea();
+					
+					if area then 
+						ct:Parse(area.Name);
+						send.Area = ct:Strip();
+					end 
+					
 					local params = {};
 					params.pcid = pc;
 					params.plid = pl;
@@ -988,7 +1003,7 @@ function sinfar:UpdateInGameData(objid)
 			return;
 		end
 
-		local data = {PC=obj, PLAYER=ply, Timestamp=os.time()};
+		local data = {PC=obj, PLAYER=ply, Timestamp=os.time(), AREA=NWN.GetArea()};
 
 		local ok, err = self.DB:Query("update characters set `IngameData`=@data WHERE `PCID`=@id", {data=Json.Create():Encode(data), id=id});
 

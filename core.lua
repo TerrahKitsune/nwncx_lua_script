@@ -264,7 +264,8 @@ local function GameObjectArrayUpdate(data)
 				end
 			else 
 				if SINFAR then
-					SINFAR:RemovePlayer(ply);
+					SINFAR:UpdateInGameData(obj.Id);
+					SINFAR:RemovePlayer(ply);			
 				end
 				
 				if CHAT then 
@@ -315,7 +316,7 @@ t = function()
 	for n=1, #ids do
 		local obj = NWN.GetGameObject(ids[n]);
 		if obj then
-			text = text .. n..": "..ids[n].." "..obj.Type.." "..obj.Name.."\n";
+			text = text .. n..": "..ids[n].." "..obj.Type.." "..(obj.Name or "").."\n";
 		else 
 			text = text .. n..": "..ids[n] .. "\n";
 		end
