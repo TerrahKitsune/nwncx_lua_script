@@ -51,10 +51,6 @@ function CHAT:ColorReplace(ct)
 	
 	for n=1, #parsed do 
 
-		if DEBUG then
-			self.Print(parsed[n].Type, self:TagToReadable(parsed[n].Token)..": "..parsed[n].Text);
-		end 
-		
 		color = parsed[n].Token:match("<c(...)>");
 		
 		if self.ColorTagReplace[color] then

@@ -253,19 +253,6 @@ local function GameObjectArrayUpdate(data)
 		return;
 	end 
 
-	local msg;
-	
-	if data.add then 
-		msg = "ADD ";
-	else 
-		msg = "REMOVE ";
-	end
-
-	obj.Name = obj.Name or "";
-
-	msg = msg .. obj.Id.." ["..obj.Type.."]: "..obj.Name;
-	
-	print(msg);
 	if obj.Type == "creature" then
 	
 		local ply = NWN.GetPlayerByObjectId(obj.Id);
@@ -292,6 +279,23 @@ local function GameObjectArrayUpdate(data)
 				end
 			end
 		end
+	end
+
+	if DEBUG then
+	
+		local msg;
+	
+		if data.add then 
+			msg = "ADD ";
+		else 
+			msg = "REMOVE ";
+		end
+
+		obj.Name = obj.Name or "";
+
+		msg = msg .. obj.Id.." ["..obj.Type.."]: "..obj.Name;
+		
+		print(msg);	
 	end
 end
 

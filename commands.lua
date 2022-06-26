@@ -30,6 +30,17 @@ COMMANDS:AddCommand("reload", function()
 end,
 "reloads the lua scripts");
 
+COMMANDS:AddCommand("debug", function() 
+	if DEBUG then 
+		Debug("Disabled debugmode");
+		DEBUG=false;
+	else 
+		Debug("Enabled debugmode");
+		DEBUG=true;
+	end
+end,
+"Toggle debugmode");
+
 COMMANDS:AddCommand("help", function() 
 	
 	for k,v in pairs(COMMANDS.cmd)do 
