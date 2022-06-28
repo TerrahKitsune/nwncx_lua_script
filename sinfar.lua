@@ -488,6 +488,7 @@ function sinfar:DownloadPortraitByResRef(resref)
 
 		if not raw then 
 			self.Print("Failed to download: "..query);
+			return;
 		end
 
 		local headers = "";
@@ -529,6 +530,12 @@ function sinfar:DownloadPortraitByResRef(resref)
 		filename = "./portraits/"..filename;
 
 		local f = io.open(filename, "wb");
+		
+		if not f then 
+			self.Print("Unable to open file for write: " .. filename);
+			return;
+		end 
+		
 		local buffer;
 		local written = 0;
 		repeat
@@ -555,6 +562,7 @@ function sinfar:DownloadPortraitByResRef(resref)
 		
 		if not archive then 
 			self.Debug(err);
+			return;
 		end 
 		
 		local entries = archive:Entries();

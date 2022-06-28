@@ -32,14 +32,87 @@ end
 CHAT.ColorTagReplace[string.char(143,127,255)] = function(c, ct, node) return c:ColorFunc(ct, node); end
 CHAT.ColorTagReplace[string.char(128,128,255)] = function(c, ct, node) return c:ColorFunc(ct, node); end
 
-function CHAT:GetTextBubble(text)
+function CHAT:GetTextBubble(text, objid)
 
-	if text:match("\n") == nil then 
+	local obj = NWN.GetGameObject(objid);
+
+	if not obj then 
 		return nil;
 	end 
 	
-	self.CT:Parse(text); 
-	self:ColorReplace(self.CT);
+	local dist = nil;
+	local s = NWN.GetGameObject();
+	
+	if s and s.Position and obj.Position then
+		dist = math.floor(NWN.Distance(s.Position, obj.Position)*100)/100;
+	end
+	
+	if obj.Type == "creature" and text:match("\n") then
+	
+		local name, injurdness;
+		
+		if obj.HP and obj.HP ~= "1/1" then 
+
+			name, injurdness = text:match("(.+)\n(.-)</c>");
+			
+			if name and injurdness and injurdness:len() > 0 then		
+				text = name .. "\n" .. injurdness .. " " .. obj.HP .. "</c>";
+			end
+		end
+			
+		if dist then
+		
+			local channel = nil;
+			
+			if s.Id == obj.Id then
+				channel = nil;
+			elseif dist <= 0.5 then 
+				channel = "<c"..string.char(254,200,254)..">Silent</c>";
+			elseif dist <= 1.0 then 
+				channel = "<c"..string.char(254,100,254)..">Quiet</c>";
+			elseif dist <= 3.0 then 
+				channel = "<c"..string.char(254,50,254)..">Whisper</c>";
+			else 
+				channel = nil;
+			end
+			
+			if channel then 
+			
+				name, injurdness = text:match("(.+)\n(.-)$");
+			
+				if name and injurdness and injurdness:len() > 0 then		
+					text = name .. "\n"..channel.."\n"..injurdness;
+				end
+			end		
+		end
+		
+		self.CT:Parse(text); 
+		self:ColorReplace(self.CT);
+	else
+		self.CT:Parse(text); 
+	end
+
+	if DEBUG then 
+		
+		local debugData = tostring(objid);
+		local ply = NWN.GetPlayerByObjectId(objid);
+	
+		if dist then
+			debugData = debugData .. " "..tostring(dist).." ft\n";
+			
+			debugData = debugData .. "x: "..tostring(math.floor(obj.Position.x*100)/100);
+			debugData = debugData .. " y: "..tostring(math.floor(obj.Position.y*100)/100);
+			debugData = debugData .. " z: "..tostring(math.floor(obj.Position.z*100)/100);
+			debugData = debugData .. " f: "..tostring(math.floor(obj.Orientation*100)/100)..string.char(0xB0);
+		end
+	
+		if ply then 
+			debugData = debugData .. "\n" .. ply.Id .." " .. ply.Name;
+		end
+	
+		self.CT:AppendText("\n"..debugData, "<c"..string.char(200,200,200)..">");
+		self.CT:AppendText(nil, "</c>");
+	end
 
 	return self.CT:ToString();
 end

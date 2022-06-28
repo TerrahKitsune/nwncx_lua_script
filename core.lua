@@ -112,10 +112,10 @@ Hook.HookRadialMenu(function(count)
 	menuCount = count;	
 end);
 
-Hook.HookSetTextBubbleText(function(text)
+Hook.HookSetTextBubbleText(function(text, objid)
 
 	if CHAT then 
-		return CHAT:GetTextBubble(text);
+		return CHAT:GetTextBubble(text, objid);
 	else 
 		return text;
 	end 
@@ -414,6 +414,19 @@ NWN.Direction = function(fAngle)
 	end 
 	
     return "East";
+end
+
+NWN.Distance = function(va, vb)
+
+	local h = {x = va.x - vb.x, y = va.y - vb.y, z = va.z - vb.z};
+
+	h.x = h.x^2;
+	h.y = h.y^2;
+	h.z = h.z^2;
+	
+	local l = h.x + h.y + h.z;
+	
+	return math.sqrt(l);
 end
 
 if VARS then
