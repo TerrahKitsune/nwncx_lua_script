@@ -247,9 +247,6 @@ local function GameObjectArrayUpdate(data)
 	local obj = NWN.GetGameObject(data.objid);
 
 	if not obj then 
-		if DEBUG then
-			print(objid,add);
-		end
 		return;
 	end 
 
