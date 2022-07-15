@@ -425,17 +425,16 @@ NWN.Stream = Stream.Create();
 NWN.Utf8 = function(str)
 
 	NWN.Stream:SetLength(0);
-	NWN.Stream:WriteUtf8(str);
-	NWN.Stream:Seek();
+	if str then
+		NWN.Stream:WriteUtf8(str);
+		NWN.Stream:Seek();
+	end
 	return NWN.Stream:Read();
 end 
 
 NWN.Ansi = function(str)
 
-	NWN.Stream:SetLength(0);
-	NWN.Stream:WriteUtf8(str);
-	NWN.Stream:Seek();
-	return NWN.Stream:Read();
+	return str;
 end 
 
 if VARS then
