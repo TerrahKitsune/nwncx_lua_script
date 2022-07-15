@@ -196,6 +196,8 @@ function CHAT:HandleJoinLeave(ct)
 			client = "<c"..string.char(237,28,36)..">a "..client.."</c>";
 		end
 	
+		ct:Clear();
+	
 		if joinleave == "joined" then
 			
 			if isWebclient then 
@@ -205,7 +207,7 @@ function CHAT:HandleJoinLeave(ct)
 				else
 					ct:Parse(color..ply.Name.." joined webclient</c>");
 				end
-			else	
+			else
 				ct:Parse(color..ply.Name.." has joined as "..client.."</c>");
 			end
 			
@@ -456,6 +458,7 @@ end
 
 function CHAT:DoPrint(text, type, resref, playerId, isPlayer)
 
+	self.CT:Clear();
 	self.CT:Parse(text);
 	
 	if type == 32 then

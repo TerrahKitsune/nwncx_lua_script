@@ -74,4 +74,191 @@ function vars:Set(name, value)
 	assert(self.DB:Query([[replace into vars (Name, Type, Value)values(@id,@t, @v);]], {id=name, t=Type, v=setvalue}));
 end
 
+function vars:CreateLinkedList()
+
+	local linkedList = {Count=0};
+
+	function linkedList:Count()
+		return self.Count;
+	end
+
+	function linkedList:AddFirst(value)
+	
+		local node = {
+			Value=value,
+			Next = self.First,
+			Id = nil
+		};
+		
+		node.Id = tonumber(tostring(node):sub(8), 16);
+		
+		self.Count = self.Count + 1;
+		self.First = node;	
+		
+		return node.Id;
+	end
+
+	function linkedList:AddLast(value)
+	
+		local node = {
+			Value=value,
+			Next = nil,
+			Id = nil
+		};
+		
+		node.Id = tonumber(tostring(node):sub(8), 16);
+		
+		self.Count = self.Count + 1;
+		
+		if not self.First then
+			self.First = node;
+			return node.Id;
+		end 
+		
+		local c = self.First;
+		
+		while c do 
+	
+			if not c.Next then 
+				break;
+			end
+			
+			c = c.Next;
+		end	
+
+		c.Next = node;
+		return node.Id;
+	end
+
+	function linkedList:Remove(id)
+	
+		if self.First and self.First.Id == id then 
+			self.First = self.First.Next;
+			self.Count = self.Count - 1;
+			return true;
+		end 
+	
+		local c = self.First;
+		local prev;
+		while c do 
+	
+			if c.Id == id then 
+			
+				prev.Next = c.Next;
+				self.Count = self.Count - 1;
+				return true;
+			end
+			
+			prev = c;
+			c = c.Next;
+		end	 
+		
+		return false;
+	end
+
+	function linkedList:RemoveFirst()
+	
+		if not self.First then 
+			return false;
+		end 
+	
+		self.Count = self.Count - 1;
+		self.First = self.First.Next;
+
+		return true;
+	end
+	
+	function linkedList:RemoveLast()
+	
+		if not self.First then 
+			return false;
+		end 
+	
+		local c = self.First;
+		local prev; 
+		
+		while c do
+		
+			if not c.Next then 
+			
+				if prev then	
+					prev.Next = nil;
+				else 
+					self.First = nil;
+				end
+				
+				break;
+			end 
+		
+			prev = c;
+			c = c.Next; 
+		end 
+		
+		self.Count = self.Count - 1;
+		return true;
+	end
+	
+	function linkedList:All()
+	
+		local current = self.First;
+		
+		return function()
+			local c = current;
+			if c then 
+				current = current.Next;
+				return c.Id, c.Value;
+			end		
+		end
+	end
+
+	function linkedList:Set(id, value)
+	
+		local c = self.First;
+		while c do
+		
+			if c.Id == id then 
+	
+				c.Value = value;
+				return true;
+			end 
+			
+			c = c.Next;
+		end
+		
+		return false;
+	end
+	
+	function linkedList:LastToFirst()
+	
+		if not self.First then 
+			return false;
+		end 
+	
+		local c = self.First;
+		local prev; 
+		
+		while c do
+		
+			if not c.Next then 
+			
+				if prev then	
+					prev.Next = nil;
+				else 
+					self.First = nil;
+				end
+				
+				break;
+			end 
+		
+			prev = c;
+			c = c.Next; 
+		end
+		
+		c.Next = self.First;
+		self.First = c;
+	end
+
+	return linkedList;
+end 
+
 return vars;

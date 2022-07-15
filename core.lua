@@ -3,12 +3,14 @@ local sqlite = SQLite.Open(FOLDER.."lua.sqlite", 1);
 
 math.randomseed(os.time());
 math.random();math.random();math.random();
+Gui.Clear();
 
 CONSOLE = dofile(FOLDER.."console.lua");
 SINFAR = dofile(FOLDER.."sinfar.lua");
 CHAT = dofile(FOLDER.."chat.lua");
 COMMANDS = dofile(FOLDER.."commands.lua");
 VARS = dofile(FOLDER.."globalvar.lua");
+IMGUI = dofile(FOLDER.."imgui.lua");
 
 function PrintAll(tbl, depth, alreadyprinted)
 
@@ -87,6 +89,8 @@ Hook.HookParseChatString(function(text, type)
 		Notification("Update available v"..NEEDSUPDATE..": https://github.com/TerrahKitsune/nwncx_lua_script/raw/main/nwnx_lua.zip");
 		NEEDSUPDATE = nil;
 	end 
+
+	LASTMSG = text;
 
 	if COMMANDS then 
 		return COMMANDS:DoCommand(text);
@@ -170,6 +174,10 @@ Hook.HookMainLoop(function()
 	
 	if fpsTimer:Elapsed() > 1000 then
 	
+		if IMGUI and IMGUI.DoStart then 
+			IMGUI:Start(COMMANDS);
+		end
+	
 		local x,y = NWN.GetSceneSize();
 		
 		if metricBubbles.fpsbubble then
@@ -224,7 +232,6 @@ Hook.HookMainLoop(function()
 	if SINFAR then
 		SINFAR:Tick();
 	end
-	
 end);
 
 function ToggleAll()
@@ -326,6 +333,7 @@ Hook.HookSetPlayerCreature(function(objid)
 end);
 
 Hook.HookLoadArea(function(area)
+
 	Debug(area);
 end);
 
@@ -362,32 +370,19 @@ a = function()
 	Debug(NWN.GetSurfaceHeight(obj.Position.x, obj.Position.y));
 end
 
-b = function(str)
+b = function()
 	
-	if tk then 
-		local info = tk:GetInfo();
-		Debug(info);
-		
-		if info.Hidden then 
-			tk:SetHidden(false);
-		else
-			tk:SetHidden(true);
-		end
-		
-		return;
-	end 
+	Time = os.time;
 	
-	local x,y = NWN.GetSceneSize();
-	local bubble = TextBubble.Create(str, 200, y);
-	
-	local info = bubble:GetInfo();
-	bubble:Activate();
-	
-	Debug(info);
+	local function SetGCFunction(tbl, func)
+		return setmetatable(tbl, {__gc = func})
+	end
 
-	tk=bubble;
-	
-	return bubble;
+	local function CreateGCPrint()
+		SetGCFunction({last=Time()}, function(obj) local t=Time();Debug("COLLECTING GARBAGE Lua mem: "..math.floor(collectgarbage("count")) .. " KB Time: "..(t-obj.last)); CreateGCPrint(); end);
+	end
+	CreateGCPrint();
+	collectgarbage();
 end
 
 NWN.Direction = function(fAngle)
@@ -426,6 +421,23 @@ NWN.Distance = function(va, vb)
 	return math.sqrt(l);
 end
 
+NWN.Stream = Stream.Create();
+NWN.Utf8 = function(str)
+
+	NWN.Stream:SetLength(0);
+	NWN.Stream:WriteUtf8(str);
+	NWN.Stream:Seek();
+	return NWN.Stream:Read();
+end 
+
+NWN.Ansi = function(str)
+
+	NWN.Stream:SetLength(0);
+	NWN.Stream:WriteUtf8(str);
+	NWN.Stream:Seek();
+	return NWN.Stream:Read();
+end 
+
 if VARS then
 	VARS:Start(sqlite);
 end 
@@ -439,5 +451,5 @@ if COMMANDS then
 end
 
 if SINFAR and CHAT then
-	SINFAR:Start(function(str) Debug(str); print(str); end, sqlite, CHAT, COMMANDS);
+	SINFAR:Start(function(str) Debug(str); print(str); end, sqlite, CHAT, COMMANDS, IMGUI);
 end

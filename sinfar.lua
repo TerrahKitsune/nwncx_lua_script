@@ -1,9 +1,24 @@
 Players = Players or {};
-local sinfar = {spytime=3, CO={}, Chat={}, Nil={}, Portraits={}, whospybubble=nil, Players=Players, chat=nil,CT = ColorToken.Create(), Control=nil, Sinfarian=false};
+local sinfar = {spytime=3, CO={}, InfosUpdated={}, Chat={}, Nil={}, Portraits={}, whospybubble=nil, Players=Players, chat=nil,CT = ColorToken.Create(), Control=nil, Sinfarian=false};
 
-function sinfar:Start(printfunc, db, chat, COMMANDS)
+function sinfar:Start(printfunc, db, chat, COMMANDS, IMGUI)
 	
 	self.chat = chat;
+	self.imgui = IMGUI;	
+	self.LastWhospy = {};
+	self.ChatLog = {};
+
+	Gui.SetValue("whospyinterval", 4, 3);
+	Gui.SetValue("maxchatlogs", 4, 1000);
+	self.imgui:AddRenderFunction(function(ui) self:RenderImguiUI(ui); end);
+	self.imgui:AddMainMenuSettingsFunction(function(ui)
+
+		if ui:MenuItem("Whospy", "whospywindow") then
+		end
+		
+		if ui:MenuItem("Chatlog", "chatlog") then
+		end
+	end);
 	
 	db:Query([[CREATE TABLE "characters" (
 	"PCID"	INTEGER NOT NULL,
@@ -28,14 +43,7 @@ function sinfar:Start(printfunc, db, chat, COMMANDS)
 	"Data"	JSON NOT NULL,
 	PRIMARY KEY("Id" AUTOINCREMENT));]]);
 	
-	db:Query([[create view ChatLog as
-	select Id,
-	Timestamp,
-	'[' || datetime(Timestamp, 'unixepoch', 'localtime') || '] [' ||
-	COALESCE(json_extract(Data, "$.Channel"),'NULL') || "] " ||
-	COALESCE(json_extract(Data, "$.Name"),'NULL') || ": " ||
-	COALESCE(json_extract(Data, "$.Text"),'') as `Log` from chat;]]);
-	
+	db:Query([[CREATE INDEX "idx_chat_timestamp" ON "chat" ("Timestamp"	DESC);]]);
 	db:Query([[CREATE UNIQUE INDEX "idx_players_name" ON "players" ("Name");]]);
 	
 	self.DB = db;
@@ -52,17 +60,244 @@ function sinfar:Start(printfunc, db, chat, COMMANDS)
 		
 		COMMANDS:AddCommand("whospy", function()
 			
-			if self.WHOSPY then 
-				self.WHOSPY = false;
+			if  Gui.GetValue("whospywindow", 1) then 
+				Gui.SetValue("whospywindow", 1, false);
 				self.Print("Whospy: OFF");
 			else 
-				self.WHOSPY = true;
+				Gui.SetValue("whospywindow", 1, true);
 				self.Print("Whospy: ON");
 				self:SendWhoSpy();
 			end			
 		end, "Toggles auto whospy");
-	end 
+	end
+	
+	self:PopulateChatlogData(Gui.GetValue("maxchatlogs", 4));
+	self.selectedName = "";
 end 
+
+function sinfar:PopulateChatlogData(limit)
+
+	self.ChatLog = {};
+	assert(self.DB:Query("select datetime(`Timestamp`, 'unixepoch', 'localtime') as `Timestamp`, `Data` from Chat order by `Timestamp` desc limit "..tostring(tonumber(limit))..";"));
+
+	local j=Json.Create();
+	local rows = {};
+	local row;
+	local data;
+	while self.DB:Fetch() do
+		row = self.DB:GetRow();
+		data = j:Decode(row.Data);
+		table.insert(rows, {
+			Timestamp = row.Timestamp,
+			Text = data.Text,
+			Name = data.Name,
+			Channel = data.Channel,
+			NameToken = data.NameToken,
+			TextToken = data.TextToken
+		});
+	end
+	
+	for n=#rows, 1, -1 do 
+		self:AddChat(rows[n]);
+	end
+end
+
+function sinfar:AddChat(chat)
+
+	local maxChats = Gui.GetValue("maxchatlogs", 4);
+	local temp;
+	
+	chat.Timestamp = chat.Timestamp or "";
+	chat.Channel = chat.Channel or "";
+	chat.Name = NWN.Utf8(chat.Name);
+	chat.Text = NWN.Utf8(chat.Text);
+
+	local r,g,b = chat.NameToken:match("<c(.)(.)(.)>");	
+	chat.NameColor = Gui.RGBToVec4(string.byte(r),string.byte(g),string.byte(b));
+	
+	r,g,b = chat.TextToken:match("<c(.)(.)(.)>");	
+	chat.ChannelColor = Gui.RGBToVec4(string.byte(r),string.byte(g),string.byte(b));
+	
+	for n=#self.ChatLog, 1, -1 do 
+	
+		if n <= maxChats then 
+			self.ChatLog[n+1] = self.ChatLog[n];
+		end
+	end
+	
+	self.ChatLog[1] = chat;
+end
+
+function sinfar:RenderChatLog(ui)
+
+	ui:PushStyleVar(2, {x=0, y=0});
+
+	ui:SetNextWindowSize({x=500, y=400}, ui.GetEnums().ImGuiCond.FirstUseEver);
+	if not ui:Begin("Chatlog", "chatlog") then
+		ui:End();
+		ui:PopStyleVar();
+		return;
+	end
+	
+	ui:PushStyleVar(14, {x=0, y=0});
+
+	local tmSize = 0;
+	local chanSize = 0;
+	local nameSize = 0;
+	
+	local size;
+	for n=1, #self.ChatLog do
+	
+		size = ui:CalcTextSize(self.ChatLog[n].Timestamp);
+	
+		if size.x > tmSize then 
+			tmSize = size.x;
+		end
+	
+		size = ui:CalcTextSize(self.ChatLog[n].Channel);
+	
+		if size.x > chanSize then 
+			chanSize = size.x;
+		end
+		
+		size = ui:CalcTextSize(self.ChatLog[n].Name);
+	
+		if size.x > nameSize then 
+			nameSize = size.x;
+		end
+	end
+
+	if not ui:BeginChild("chatlogchild") then 
+		ui:PopStyleVar();
+		ui:PopStyleVar();
+		ui:EndChild();
+		return;
+	end
+
+	if ui:BeginTable("Chat", 2, 1920 | 1 | 64) then
+	
+		--ui:TableSetupColumn("Timestamp", 16, tmSize);
+		--ui:TableSetupColumn("Channel", 16, chanSize);
+		--ui:TableSetupColumn("Name", 16, nameSize);
+		ui:TableSetupColumn("Name", 16, math.max(tmSize, chanSize, nameSize));
+		ui:TableSetupColumn("Message", 0, 0);
+
+		for n=#self.ChatLog, 1, -1 do
+		
+			if ui:TableNextColumn() then 
+			
+				ui:Text(self.ChatLog[n].Timestamp);
+
+				ui:PushId(n);
+				ui:PushStyleColor(0, self.ChatLog[n].NameColor);
+
+				if ui:Selectable(self.ChatLog[n].Name, self.ChatLog[n].Name == self.selectedName) then 
+					
+					if self.selectedName == self.ChatLog[n].Name then 
+						self.selectedName = "";
+					else				
+						self.selectedName = self.ChatLog[n].Name;
+					end
+				end
+				
+				ui:PopStyleColor();
+				ui:PopId();
+
+				ui:PushStyleColor(0, self.ChatLog[n].ChannelColor);
+				ui:Text(self.ChatLog[n].Channel);
+				ui:PopStyleColor();
+			end
+			
+			if ui:TableNextColumn() then 
+				ui:TextWrapped(self.ChatLog[n].Text);
+			end
+		end
+
+		ui:EndTable();
+	end
+	
+	ui:PopStyleVar();
+	ui:PopStyleVar();
+	
+	if ui:GetScrollY() >= ui:GetScrollMaxY() then 
+		ui:SetScrollHereY(1);
+	end
+	
+	ui:EndChild();
+	ui:End();
+end
+
+function sinfar:RenderImguiUI(ui)
+
+	if Gui.GetValue("chatlog", 1) then 
+		self:RenderChatLog(ui);
+	end
+
+	if Gui.GetValue("whospywindow", 1) then 
+	
+		local obj = NWN.GetGameObject();
+	
+		if not obj then 
+			return;
+		end 
+	
+		ui:SetNextWindowSize({x=25,y=25},8);
+		if ui:Begin("Whospy", "whospywindow", 64) then
+			local v, r,g,b;
+
+			if DEBUG then
+		
+				ui:SliderInt("Whospy Interval", "whospyinterval", 1, 10)
+				ui:Separator();
+			end
+			
+			if #self.LastWhospy <= 0 then 
+				table.insert(self.LastWhospy, {T="Just You", Who=obj.Name});
+			end 
+			
+			for n=1, #self.LastWhospy do
+			
+				v = self.LastWhospy[n];
+				
+				r,g,b = self.chat:GetNameColor(v.Who):match("<c(.)(.)(.)>");
+
+				ui:TextColored(ui.RGBToVec4(string.byte(r),string.byte(g),string.byte(b)), v.Who);
+				ui:SameLine();
+				
+				if v.T == "unheard" then
+					ui:TextColored(ui.RGBToVec4(149,139,154), v.T);
+				elseif v.T == "talk" then 
+					ui:TextColored(ui.RGBToVec4(230,230,230), v.T);
+				else
+					ui:TextColored(ui.RGBToVec4(200,1,1), v.T);
+				end
+					
+				ui:Separator();
+			end
+		
+			local interval = Gui.GetValue("whospyinterval", 4);
+			
+			if interval == nil then 
+				interval = 3;
+			end
+		
+			Gui.SetValue("whospyprogresstext", 5, tostring(math.floor(self.whoTimer:Elapsed())));
+		
+			interval = interval * 1000;
+			interval = self.whoTimer:Elapsed() / interval;
+		
+			if interval < 0.0 then 
+				interval = 0.0;
+			elseif interval > 1.0 then 
+				interval = 1.0;
+			end
+		
+			ui:ProgressBar(interval, nil, "whospyprogresstext");
+		end 
+		
+		ui:End();
+	end
+end
 
 function sinfar:PopChatlog(param, tofile)
 
@@ -241,7 +476,7 @@ end
 
 function sinfar:WhoSpy(text)
 
-	if not self.WHOSPY then 
+	if not Gui.GetValue("whospywindow", 1) then 
 		return false;
 	end 
 
@@ -290,6 +525,12 @@ function sinfar:WhoSpy(text)
 					table.insert(hears, {Who=c.Name, Player=v.Name, T="unheard"});
 				end
 			end	
+		end
+
+		if self.imgui and self.imgui.Enabled then
+		
+			self.LastWhospy = hears;
+			return true;
 		end
 
 		local msg = "<c"..string.char(151,202,100)..">==== PCs near you ====</c>\n";
@@ -356,7 +597,7 @@ end
 
 function sinfar:UpdatePlayerInfo(playername)
 
-	local co = self.CO[playername]
+	local co = self.CO["info_"..playername];
 
 	if co and coroutine.status(co) ~= "dead" then 
 		return co;
@@ -367,6 +608,11 @@ function sinfar:UpdatePlayerInfo(playername)
 		if not self:IsSinfar() then 
 			self.Print("UpdatePlayerInfo: not sinfar");
 			return;
+		elseif self.InfosUpdated[playername] then
+			self.Print("UpdatePlayerInfo: Already updated "..playername);
+			return;
+		else
+			self.InfosUpdated[playername] = {Last=Runtime(), Success=false};
 		end
 	
 		self.Print("Fetching player info: "..playername);
@@ -418,14 +664,30 @@ function sinfar:UpdatePlayerInfo(playername)
 			
 				for	n=1, #data do 
 				
-					ok, err = self.DB:Query("insert or ignore into players (`PLID`,`Name`)VALUES(@id, @name);", {id=data[n].plid,name=data[n].playername});
+					ok, err = self.DB:Query("select Name from players where PLID = @id;",{id=data[n].plid});
+				
+					if not ok then 
+						self.Print(err);
+						return false;
+					end
+				
+					if ok and self.DB:Fetch() then 
+					
+						if self.DB:GetRow(1) ~= data[n].playername then 
+						
+							Debug("Updating PLID "..tostring(data[n].plid).." from "..self.DB:GetRow(1).." to "..data[n].playername);
+							ok, err = self.DB:Query("update players set Name = @name where PLID = @id;", {id=data[n].plid,name=data[n].playername});
+						end				
+					else
+						ok, err = self.DB:Query("insert into players (`PLID`,`Name`)VALUES(@id, @name);", {id=data[n].plid,name=data[n].playername});
+					end
 					
 					if not ok then 
 						self.Print(err);
 						return false;
 					end
 					
-					ok, err = self.DB:Query("insert or ignore into characters (`PCID`,`PLID`,`Name`,`Portrait`,`LastSeen`)VALUES(@id, @plid, @name, @portrait, @lastseen);", {id=data[n].pcid, plid=data[n].plid, name=data[n].charname, portrait=data[n].portrait, lastseen=data[n].lastseen});
+					ok, err = self.DB:Query("insert into characters (`PCID`,`PLID`,`Name`,`Portrait`,`LastSeen`)VALUES(@id, @plid, @name, @portrait, @lastseen);", {id=data[n].pcid, plid=data[n].plid, name=data[n].charname, portrait=data[n].portrait, lastseen=data[n].lastseen});
 					
 					if not ok then 
 						self.Print(err);
@@ -450,14 +712,22 @@ function sinfar:UpdatePlayerInfo(playername)
 			save = function() return true; end
 		end
 		
+		local tries = 0;
+		
 		while not save() do
 			coroutine.yield();
+			tries = tries + 1;
+			if tries > 3 then 
+				self.Print("Failed to update records for "..playername);
+				return;
+			end 
 		end
 		
+		self.InfosUpdated[playername].Success = true;
 		self.Print("Fetched player info: "..playername.." "..tostring(#data).." records updated");
 	end);
 
-	self.CO[playername] = co;
+	self.CO["info_"..playername] = co;
 	return co;
 end
 
@@ -626,25 +896,14 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 
 	local characterid = obj.Id.."_"..obj.ObjectId;
 
-	local ok, err = self.DB:Query([[select Portrait, PCID, julianday('now')-julianday(characters.LastSeen) as `Julianday` from characters join players on characters.PLID=players.PLID where players.Name like @p and characters.Name like @c order by characters.LastSeen desc;]], {p=Wchar.FromAnsi(obj.Name), c=Wchar.FromAnsi(obj.CharacterName)});
+	local ok, err = self.DB:Query([[select Portrait from characters join players on characters.PLID=players.PLID where players.Name like @p and characters.Name like @c order by characters.LastSeen desc;]], {p=Wchar.FromAnsi(obj.Name), c=Wchar.FromAnsi(obj.CharacterName)});
 
 	if ok and self.DB:Fetch() then
 	
 		local row = self.DB:GetRow();
 	
 		if self:HasPortraitResources(row.Portrait) then
-	
-			if row.Julianday < 2 then
-
-				if self:IsPortraitUnknown(ori) and not self:IsPortraitUnknown(row.Portrait) then
-					NWN.SetPortrait(obj.ObjectId, row.Portrait);
-					return row.Portrait;
-				else 
-					return ori;
-				end
-			else
-				ori = row.Portrait;
-			end
+			ori = row.Portrait;
 		end
 	end
 	
@@ -778,7 +1037,39 @@ function sinfar:LogChat(chat, type, playerId, resref)
 		type ~= 1024 then 
 
 		return;
-	elseif not self:IsSinfar() then 
+	end 
+	
+	local parts = chat:GetAsParts();
+
+	local msg = {
+		Name = parts[1].Text:match("(.+):"),
+		Text = parts[2].Text,
+		Channel = "",
+		Timestamp = os.time(),
+		TextToken = parts[2].Token,
+		NameToken = parts[1].Token
+	};
+	
+	msg.Channel = msg.Text:match("^%[(.-)%]%s");
+	
+	if not msg.Channel then 
+		msg.Channel = "Talk";
+	else 
+		msg.Text = msg.Text:match("^%[.-%]%s(.+)");
+		if msg.Channel:match(".-(%s)") then 
+			msg.Channel = msg.Channel:match("(.-)%s");
+		end				
+	end
+	
+	assert(self.DB:Query("select datetime("..tostring(tonumber(msg.Timestamp))..", 'unixepoch', 'localtime');"));
+	
+	if self.DB:Fetch() then
+		msg.Timestamp = self.DB:GetRow(1);
+	end
+	
+	self:AddChat(msg);
+	
+	if not self:IsSinfar() then 
 		self.Print("LogChat: not sinfar");
 		return;
 	end 
@@ -851,14 +1142,19 @@ function sinfar:LogChat(chat, type, playerId, resref)
 								
 									failsafe = Runtime() + (60000*fails);
 									
-									print(failsafe);
+									--print(failsafe);
 									
 									while failsafe > Runtime() do 
 										coroutine.yield();
-										print(failsafe-Runtime());
+										--print(failsafe-Runtime());
 									end 
 									
 									fails = fails + 1;
+								
+									if fails >= 3 then
+										Debug("Record "..send.Player.." not found after 3 retries");
+										return;
+									end 
 								
 									local co = self:UpdatePlayerInfo(send.Player);
 									while coroutine.status(co) ~= "dead" do
@@ -1040,6 +1336,7 @@ function sinfar:Tick()
 			dead = dead or {};
 			table.insert(dead, k);
 		else 
+
 			ok, err = coroutine.resume(v);
 			
 			if not ok then 
@@ -1056,13 +1353,20 @@ function sinfar:Tick()
 		end
 	end
 	
-	if self.WHOSPY then
+	if Gui.GetValue("whospywindow", 1) then
 
 		if self.spytime < 1 then 
 			self.spytime = 1;
 		end 
 
-		if self.whoTimer:Elapsed() > (self.spytime * 1000) then
+		local interval = Gui.GetValue("whospyinterval", 4);
+		
+		if interval == nil then 
+			interval = 3;
+			Gui.SetValue("whospyinterval", 4, interval);
+		end
+
+		if self.whoTimer:Elapsed() > (interval * 1000) then
 
 			self:SendWhoSpy();
 			
