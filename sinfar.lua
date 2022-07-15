@@ -675,10 +675,11 @@ function sinfar:UpdatePlayerInfo(playername)
 					
 						if self.DB:GetRow(1) ~= data[n].playername then 
 						
-							Debug("Updating PLID "..tostring(data[n].plid).." from "..self.DB:GetRow(1).." to "..data[n].playername);
+							self.Print("Updating PLID "..tostring(data[n].plid).." from "..self.DB:GetRow(1).." to "..data[n].playername);
 							ok, err = self.DB:Query("update players set Name = @name where PLID = @id;", {id=data[n].plid,name=data[n].playername});
 						end				
 					else
+						self.Print("First seen player: "..data[n].playername);
 						ok, err = self.DB:Query("insert into players (`PLID`,`Name`)VALUES(@id, @name);", {id=data[n].plid,name=data[n].playername});
 					end
 					
@@ -687,7 +688,17 @@ function sinfar:UpdatePlayerInfo(playername)
 						return false;
 					end
 					
-					ok, err = self.DB:Query("insert into characters (`PCID`,`PLID`,`Name`,`Portrait`,`LastSeen`)VALUES(@id, @plid, @name, @portrait, @lastseen);", {id=data[n].pcid, plid=data[n].plid, name=data[n].charname, portrait=data[n].portrait, lastseen=data[n].lastseen});
+					ok, err = self.DB:Query("select PCID from characters where PCID = @id;",{id=data[n].pcid});
+					
+					if not ok then 
+						self.Print(err);
+						return false;
+					end
+					
+					if not ok or not self.DB:Fetch() or self.DB:GetRow(1) ~= data[n].pcid then 
+						self.Print("First seen character: "..data[n].charname);
+						ok, err = self.DB:Query("insert into characters (`PCID`,`PLID`,`Name`,`Portrait`,`LastSeen`)VALUES(@id, @plid, @name, @portrait, @lastseen);", {id=data[n].pcid, plid=data[n].plid, name=data[n].charname, portrait=data[n].portrait, lastseen=data[n].lastseen});
+					end 
 					
 					if not ok then 
 						self.Print(err);
