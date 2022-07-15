@@ -57,7 +57,7 @@ color.hsltorgb = function(h, s, l)
 		mid1 = m + vsf;
 		mid2 = v - vsf;
 
-		if sextant == 0 then 
+		if sextant <= 0 then 
 			r = v;
 			g = mid1;
 			b = m; 
@@ -77,12 +77,12 @@ color.hsltorgb = function(h, s, l)
 			r = mid1;
 			g = m;
 			b = v;
-		elseif sextant == 5 then 
+		elseif sextant >= 5 then 
 			r = v;
 			g = m;
 			b = mid2; 
 		else 
-			error("Hue invalid format");
+			error("Hue invalid format "..tostring(h));
 		end	
 	end
 	
