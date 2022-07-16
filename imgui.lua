@@ -6,6 +6,10 @@ Imgui.Disabled = false;
 Imgui.RenderFuncs = {};
 Imgui.MainMenuSettingsFuncs = {};
 Imgui.Fails = 0;
+Imgui.Fpses = {};
+Imgui.SampleTime = 500;
+Imgui.MaxFpses = 120;
+Imgui.LastFps = Runtime();
 
 function Imgui:AddMainMenuSettingsFunction(func)
 	
@@ -49,6 +53,39 @@ function Imgui:RestoreStyle()
 	
 	local j = Json.Create();
 	Gui.SetStyle(j:Decode(raw));
+end
+
+function Imgui:PlotFPS(ui, fps)
+
+	local r = Runtime();
+
+	if #self.Fpses < self.MaxFpses or r - self.LastFps >= self.SampleTime then
+
+		self.LastFps = r;
+
+		local total = fps;
+		local c;
+		
+		for n=self.MaxFpses,2, -1 do
+
+			c = self.Fpses[n-1]
+			if c then
+				self.Fpses[n] = c;
+				total = total + c;
+			end
+		end
+		
+		Gui.SetValue("avgfps", 5, math.floor(total / #self.Fpses) .. " Avg");
+	end
+	
+	self.Fpses[1] = fps;
+	
+	if ui:IsItemHovered() and #self.Fpses > 0 then
+	
+		ui:BeginTooltip();
+		ui:PlotLines("##fpsplot", self.Fpses, "avgfps");
+		ui:EndTooltip();
+	end
 end
 
 function Imgui:Start(COMMANDS)
@@ -137,6 +174,7 @@ function Imgui:Start(COMMANDS)
 				ui:SameLine(xoffset - cursor.x - textSize.x);
 
 				ui:Text(fps);
+				self:PlotFPS(ui, framerate);
 				
 				ui:EndMenuBar();
 				
@@ -187,6 +225,7 @@ function Imgui:Start(COMMANDS)
 		end 
 	end
 	
+	Gui.SetValue("showstyleeditor", 5, "avgfps");
 	Gui.SetValue("showstyleeditor", 1, false);
 	Gui.SetValue("showdemowindow", 1, false);
 	Gui.SetValue("showmainbar", 1, true);
