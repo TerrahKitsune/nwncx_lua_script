@@ -6,8 +6,7 @@ Imgui.Disabled = false;
 Imgui.RenderFuncs = {};
 Imgui.MainMenuSettingsFuncs = {};
 Imgui.Fails = 0;
-Imgui.Fpses = {};
-Imgui.SampleTime = 500;
+Imgui.SampleTime = 250;
 Imgui.MaxFpses = 120;
 Imgui.LastFps = Runtime();
 
@@ -59,26 +58,27 @@ function Imgui:PlotFPS(ui, fps)
 
 	local r = Runtime();
 
-	if #self.Fpses < self.MaxFpses or r - self.LastFps >= self.SampleTime then
+	if r - self.LastFps >= self.SampleTime then
 
 		self.LastFps = r;
+		self.Fpses = self.Fpses or self.Vars:CreateLinkedList()
 
-		local total = fps;
-		local c;
-		
-		for n=self.MaxFpses,2, -1 do
-
-			c = self.Fpses[n-1]
-			if c then
-				self.Fpses[n] = c;
-				total = total + c;
-			end
+		if self.Fpses:Len() < self.MaxFpses then 
+			self.Fpses:AddFirst(fps);
+		else 
+			self.Fpses:LastToFirst();
+			self.Fpses.First.Value = fps;
 		end
 		
+		local total = 0;
+		local c = self.Fpses.First;
+		while c do
+			total = total + c.Value;
+			c = c.Next;
+		end
+
 		Gui.SetValue("avgfps", 5, math.floor(total / #self.Fpses) .. " Avg");
-	end
-	
-	self.Fpses[1] = fps;
+	end 
 	
 	if ui:IsItemHovered() and #self.Fpses > 0 then
 	
@@ -88,7 +88,9 @@ function Imgui:PlotFPS(ui, fps)
 	end
 end
 
-function Imgui:Start(COMMANDS)
+function Imgui:Start(COMMANDS, VARS)
+
+	self.Vars = VARS;
 
 	if self.Fails >= 5 then
 		return;

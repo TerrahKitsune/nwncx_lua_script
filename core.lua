@@ -175,7 +175,7 @@ Hook.HookMainLoop(function()
 	if fpsTimer:Elapsed() > 1000 then
 	
 		if IMGUI and IMGUI.DoStart then 
-			IMGUI:Start(COMMANDS);
+			IMGUI:Start(COMMANDS, VARS);
 		end
 	
 		local x,y = NWN.GetSceneSize();

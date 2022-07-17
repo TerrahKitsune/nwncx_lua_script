@@ -180,8 +180,8 @@ function sinfar:RenderChatLog(ui)
 		--ui:TableSetupColumn("Timestamp", 16, tmSize);
 		--ui:TableSetupColumn("Channel", 16, chanSize);
 		--ui:TableSetupColumn("Name", 16, nameSize);
-		ui:TableSetupColumn("Name", 16, math.max(tmSize, chanSize, nameSize));
-		ui:TableSetupColumn("Message", 0, 0);
+		ui:TableSetupColumn("Name", 16, math.max(tmSize, chanSize, nameSize, 25));
+		ui:TableSetupColumn("Message", 16, 0);
 
 		for n=#self.ChatLog, 1, -1 do
 		

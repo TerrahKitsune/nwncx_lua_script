@@ -74,11 +74,40 @@ function vars:Set(name, value)
 	assert(self.DB:Query([[replace into vars (Name, Type, Value)values(@id,@t, @v);]], {id=name, t=Type, v=setvalue}));
 end
 
+local linkedListMeta ={
+	__metatable="LinkedList", 
+	__index=function(tbl, idx) 
+	
+		idx = tonumber(idx);
+		if idx == nil or idx <= 0 then 
+			return nil;
+		end
+
+		local c = tbl.First;
+		local nth = 1;
+		
+		while c do 
+		
+			if nth == idx then 
+				return c.Value;
+			else 
+				nth = nth + 1;
+			end
+		
+			c = c.Next;
+		end
+	
+		return nil;
+	end,
+	__len=function(tbl)
+		return tbl:Len();
+	end};
+
 function vars:CreateLinkedList()
 
 	local linkedList = {Count=0};
 
-	function linkedList:Count()
+	function linkedList:Len()
 		return self.Count;
 	end
 
@@ -258,7 +287,10 @@ function vars:CreateLinkedList()
 		self.First = c;
 	end
 
+	setmetatable(linkedList, linkedListMeta);
+
 	return linkedList;
 end 
+
 
 return vars;
