@@ -109,8 +109,8 @@ function sinfar:AddChat(chat)
 	
 	chat.Timestamp = chat.Timestamp or "";
 	chat.Channel = chat.Channel or "";
-	chat.Name = NWN.Utf8(chat.Name);
-	chat.Text = NWN.Utf8(chat.Text);
+	chat.Name = NWN.Utf8(chat.Name or "");
+	chat.Text = NWN.Utf8(chat.Text or "");
 
 	local r,g,b = chat.NameToken:match("<c(.)(.)(.)>");	
 	chat.NameColor = Gui.RGBToVec4(string.byte(r),string.byte(g),string.byte(b));
@@ -174,6 +174,7 @@ function sinfar:RenderChatLog(ui)
 		return;
 	end
 
+	ui:PushId("ChatLogWindow");
 	if ui:BeginTable("Chat", 2, 1920 | 1 | 64) then
 	
 		--ui:TableSetupColumn("Timestamp", 16, tmSize);
@@ -215,6 +216,7 @@ function sinfar:RenderChatLog(ui)
 
 		ui:EndTable();
 	end
+	ui:PopId();
 	
 	ui:PopStyleVar();
 	ui:PopStyleVar();
@@ -609,7 +611,7 @@ function sinfar:UpdatePlayerInfo(playername)
 			self.Print("UpdatePlayerInfo: not sinfar");
 			return;
 		elseif self.InfosUpdated[playername] then
-			self.Print("UpdatePlayerInfo: Already updated "..playername);
+			--self.Print("UpdatePlayerInfo: Already updated "..playername);
 			return;
 		else
 			self.InfosUpdated[playername] = {Last=Runtime(), Success=false};
