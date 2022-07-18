@@ -10,6 +10,8 @@ function sinfar:Start(printfunc, db, chat, COMMANDS, IMGUI)
 
 	Gui.SetValue("whospyinterval", 4, 3);
 	Gui.SetValue("maxchatlogs", 4, 1000);
+	Gui.SetValue("cc_filter_name", 5, "");
+	Gui.SetValue("cc_filter_msg", 5, "");
 	self.imgui:AddRenderFunction(function(ui) self:RenderImguiUI(ui); end);
 	self.imgui:AddMainMenuSettingsFunction(function(ui)
 
@@ -71,6 +73,33 @@ function sinfar:Start(printfunc, db, chat, COMMANDS, IMGUI)
 		end, "Toggles auto whospy");
 	end
 	
+	self.Channels = {};
+	
+	table.insert(self.Channels, "Shout");
+	table.insert(self.Channels, "DM");
+	table.insert(self.Channels, "Event");
+	table.insert(self.Channels, "Action");
+	table.insert(self.Channels, "OOC");
+	table.insert(self.Channels, "PVP");
+	table.insert(self.Channels, "Sex");
+	table.insert(self.Channels, "Build");
+	table.insert(self.Channels, "FFA");
+	table.insert(self.Channels, "Talk");
+	table.insert(self.Channels, "Whisper");
+	table.insert(self.Channels, "Quiet");
+	table.insert(self.Channels, "Silent");
+	table.insert(self.Channels, "Yell");
+	table.insert(self.Channels, "Party");
+	table.insert(self.Channels, "Tell");
+	table.insert(self.Channels, "ALL");
+	
+	for n=1, #self.Channels do 
+		Gui.SetValue("c_chan_"..tostring(n), 1, false);
+	end
+	
+	Gui.SetValue("c_chan_"..tostring(#self.Channels), 1, true);
+	self:RebuildFilter(#self.Channels);
+	
 	self:PopulateChatlogData(Gui.GetValue("maxchatlogs", 4));
 	self.selectedName = "";
 end 
@@ -128,6 +157,79 @@ function sinfar:AddChat(chat)
 	self.ChatLog[1] = chat;
 end
 
+function sinfar:RebuildFilter(n)
+
+	local k,v;
+	
+	if n == #self.Channels then
+	
+		v = Gui.GetValue("c_chan_"..tostring(#self.Channels), 1);
+	
+		for n=1, #self.Channels-1 do 	
+			k = "c_chan_"..tostring(n);
+			Gui.SetValue(k, 1, v);
+		end
+	else
+		local trues = 0;
+		
+		for n=1, #self.Channels-1 do
+			k = "c_chan_"..tostring(n);
+			if Gui.GetValue(k, 1) then 
+				trues = trues + 1;
+			end
+		end
+
+		Gui.SetValue("c_chan_"..tostring(#self.Channels), 1, trues == (#self.Channels-1));
+	end
+
+	v = Gui.GetValue("c_chan_"..tostring(#self.Channels), 1);
+
+	if v then 
+		self.ChannelFilter = nil;
+	else 
+	
+		self.ChannelFilter = {};
+		
+		for n=1, #self.Channels-1 do
+			k = "c_chan_"..tostring(n);
+			if Gui.GetValue(k, 1) then 
+				self.ChannelFilter[self.Channels[n]]=true;
+			end
+		end
+	end
+end
+
+function sinfar:CheckFilter(entry)
+
+	if self.ChannelFilter and not self.ChannelFilter[entry.Channel] then
+		return false;
+	end
+	
+	local namefilter = Gui.GetValue("cc_filter_name", 5);
+	
+	if namefilter and namefilter ~= "" then
+		
+		local ok, result = pcall(string.match, entry.Name, namefilter);
+	
+		if not ok or not result then 
+			return false;
+		end 
+	end 
+	
+	local msgfilter = Gui.GetValue("cc_filter_msg", 5);
+	
+	if msgfilter and msgfilter ~= "" then
+		
+		local ok, result = pcall(string.match, entry.Text, msgfilter);
+	
+		if not ok or not result then 
+			return false;
+		end 
+	end 
+	
+	return true;
+end
+
 function sinfar:RenderChatLog(ui)
 
 	ui:PushStyleVar(2, {x=0, y=0});
@@ -137,6 +239,53 @@ function sinfar:RenderChatLog(ui)
 		ui:End();
 		ui:PopStyleVar();
 		return;
+	end
+	
+	if ui:BeginPopup("Channels") then
+
+		for n=1, #self.Channels do
+			ui:PushId(n);
+			if ui:Checkbox(self.Channels[n], "c_chan_"..tostring(n)) then
+				self:RebuildFilter(n);
+			end
+			ui:PopId();
+		end
+	
+		ui:EndPopup();
+	end
+
+	if ui:BeginPopup("Filter Name") then
+		if ui:Button("Clear") then 
+			Gui.SetValue("cc_filter_name", 5, "");
+		end
+		ui:SameLine();
+		ui:InputText("Filter", "cc_filter_name", "match pattern");
+		ui:EndPopup();
+	end
+	
+	if ui:BeginPopup("Filter Message") then
+		if ui:Button("Clear") then 
+			Gui.SetValue("cc_filter_msg", 5, "");
+		end
+		ui:SameLine();
+		ui:InputText("Filter", "cc_filter_msg", "match pattern");
+		ui:EndPopup();
+	end
+
+	if ui:Button("Channels") then 
+		ui:OpenPopup("Channels");
+	end
+	
+	ui:SameLine();
+	
+	if ui:Button("Filter Name") then 
+		ui:OpenPopup("Filter Name");
+	end
+	
+	ui:SameLine();
+	
+	if ui:Button("Filter Message") then 
+		ui:OpenPopup("Filter Message");
 	end
 	
 	ui:PushStyleVar(14, {x=0, y=0});
@@ -181,34 +330,37 @@ function sinfar:RenderChatLog(ui)
 
 		for n=#self.ChatLog, 1, -1 do
 		
-			ui:TableNextRow();
-		
-			if ui:TableNextColumn() then 
+			if self:CheckFilter(self.ChatLog[n]) then
 			
-				ui:Text(self.ChatLog[n].Timestamp);
+				ui:TableNextRow();
+			
+				if ui:TableNextColumn() then 
+				
+					ui:Text(self.ChatLog[n].Timestamp);
 
-				ui:PushId(n);
-				ui:PushStyleColor(0, self.ChatLog[n].NameColor);
+					ui:PushId(n);
+					ui:PushStyleColor(0, self.ChatLog[n].NameColor);
 
-				if ui:Selectable(self.ChatLog[n].Name, self.ChatLog[n].Name == self.selectedName) then 
-					
-					if self.selectedName == self.ChatLog[n].Name then 
-						self.selectedName = "";
-					else				
-						self.selectedName = self.ChatLog[n].Name;
+					if ui:Selectable(self.ChatLog[n].Name, self.ChatLog[n].Name == self.selectedName) then 
+						
+						if self.selectedName == self.ChatLog[n].Name then 
+							self.selectedName = "";
+						else				
+							self.selectedName = self.ChatLog[n].Name;
+						end
 					end
+					
+					ui:PopStyleColor();
+					ui:PopId();
+
+					ui:PushStyleColor(0, self.ChatLog[n].ChannelColor);
+					ui:Text(self.ChatLog[n].Channel);
+					ui:PopStyleColor();
 				end
 				
-				ui:PopStyleColor();
-				ui:PopId();
-
-				ui:PushStyleColor(0, self.ChatLog[n].ChannelColor);
-				ui:Text(self.ChatLog[n].Channel);
-				ui:PopStyleColor();
-			end
-			
-			if ui:TableNextColumn() then 
-				ui:TextWrapped(self.ChatLog[n].Text);
+				if ui:TableNextColumn() then 
+					ui:TextWrapped(self.ChatLog[n].Text);
+				end
 			end
 		end
 
