@@ -177,13 +177,11 @@ function sinfar:RenderChatLog(ui)
 	ui:PushId("ChatLogWindow");
 	if ui:BeginTable("Chat", 2, 1920 | 1 | 64) then
 	
-		--ui:TableSetupColumn("Timestamp", 16, tmSize);
-		--ui:TableSetupColumn("Channel", 16, chanSize);
-		--ui:TableSetupColumn("Name", 16, nameSize);
-		ui:TableSetupColumn("Name", 16, math.max(tmSize, chanSize, nameSize, 25));
-		ui:TableSetupColumn("Message", 16, 0);
+		ui:TableSetupColumn("Name", 16, math.max(tmSize, chanSize, nameSize, 1));
 
 		for n=#self.ChatLog, 1, -1 do
+		
+			ui:TableNextRow();
 		
 			if ui:TableNextColumn() then 
 			
