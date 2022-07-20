@@ -138,8 +138,8 @@ function sinfar:AddChat(chat)
 	
 	chat.Timestamp = chat.Timestamp or "";
 	chat.Channel = chat.Channel or "";
-	chat.Name = NWN.Utf8(chat.Name or "");
-	chat.Text = NWN.Utf8(chat.Text or "");
+	chat.Name = NWN.Utf8(chat.Name or "") or "";
+	chat.Text = NWN.Utf8(chat.Text or "") or "";
 
 	local r,g,b = chat.NameToken:match("<c(.)(.)(.)>");	
 	chat.NameColor = Gui.RGBToVec4(string.byte(r),string.byte(g),string.byte(b));
