@@ -393,8 +393,23 @@ function sinfar:RenderImguiUI(ui)
 			return;
 		end 
 	
+		local interval = Gui.GetValue("whospyinterval", 4) * 1000;
+		local progress = self.whoTimer:Elapsed() / interval;
+	
+		local symbol;
+	
+		if progress <= 0.25 then
+			symbol = "";
+		elseif progress <= 0.50 then
+			symbol = ".";
+		elseif progress <= 0.75 then
+			symbol = ". .";
+		else
+			symbol = ". . .";
+		end
+	
 		ui:SetNextWindowSize({x=25,y=25},8);
-		if ui:Begin("Whospy", "whospywindow", 64) then
+		if ui:Begin("Whospy "..symbol.."###Whospy", "whospywindow", 64) then
 			local v, r,g,b;
 
 			if DEBUG then
@@ -424,9 +439,12 @@ function sinfar:RenderImguiUI(ui)
 					ui:TextColored(ui.RGBToVec4(200,1,1), v.T);
 				end
 					
-				ui:Separator();
+				if n < #self.LastWhospy then
+					ui:Separator();
+				end
 			end
-		
+			
+			--[[
 			local interval = Gui.GetValue("whospyinterval", 4);
 			
 			if interval == nil then 
@@ -444,7 +462,7 @@ function sinfar:RenderImguiUI(ui)
 				interval = 1.0;
 			end
 		
-			ui:ProgressBar(interval, nil, "whospyprogresstext");
+			ui:ProgressBar(interval, nil, "whospyprogresstext");]]
 		end 
 		
 		ui:End();
@@ -1202,36 +1220,6 @@ function sinfar:LogChat(chat, type, playerId, resref)
 		return;
 	end 
 	
-	local parts = chat:GetAsParts();
-
-	local msg = {
-		Name = parts[1].Text:match("(.+):"),
-		Text = parts[2].Text,
-		Channel = "",
-		Timestamp = os.time(),
-		TextToken = parts[2].Token,
-		NameToken = parts[1].Token
-	};
-	
-	msg.Channel = msg.Text:match("^%[(.-)%]%s");
-	
-	if not msg.Channel then 
-		msg.Channel = "Talk";
-	else 
-		msg.Text = msg.Text:match("^%[.-%]%s(.+)");
-		if msg.Channel:match(".-(%s)") then 
-			msg.Channel = msg.Channel:match("(.-)%s");
-		end				
-	end
-	
-	assert(self.DB:Query("select datetime("..tostring(tonumber(msg.Timestamp))..", 'unixepoch', 'localtime');"));
-	
-	if self.DB:Fetch() then
-		msg.Timestamp = self.DB:GetRow(1);
-	end
-	
-	self:AddChat(msg);
-	
 	if not self:IsSinfar() then 
 		self.Print("LogChat: not sinfar");
 		return;
@@ -1271,9 +1259,16 @@ function sinfar:LogChat(chat, type, playerId, resref)
 					parts = ct:GetAsParts();
 					
 					send.Name = parts[1].Text:match("(.+):");
+					send.NameToken = parts[1].Token;
 					send.Text = parts[2].Text;
-					send.NameToken = parts[1].Token
-					send.TextToken = parts[2].Token
+					
+					if send.Text == "" then
+						send.Text = parts[3].Text;
+						send.TextToken = parts[3].Token;
+					else 
+						send.TextToken = parts[2].Token;
+					end
+
 					send.Channel = send.Text:match("^%[(.-)%]%s");
 					
 					if not send.Channel then 
@@ -1285,6 +1280,23 @@ function sinfar:LogChat(chat, type, playerId, resref)
 						end				
 					end
 					
+					local chatlogmsg = {
+						Name = send.Name,
+						Text =send.Text,
+						Channel = send.Channel,
+						Timestamp = os.time(),
+						TextToken = send.TextToken,
+						NameToken = send.NameToken
+					};
+					
+					assert(self.DB:Query("select datetime("..tostring(tonumber(chatlogmsg.Timestamp))..", 'unixepoch', 'localtime');"));
+	
+					if self.DB:Fetch() then
+						chatlogmsg.Timestamp = self.DB:GetRow(1);
+					end
+					
+					self:AddChat(chatlogmsg);
+
 					if msg.P then 
 
 						local ply = NWN.GetPlayer(msg.P);
