@@ -208,7 +208,7 @@ function Imgui:Start(COMMANDS, VARS)
 	
 	if ok then
 	
-		self.Enabled = (ver == "0.0.1");	
+		self.Enabled = (ver == "0.0.1") or (ver == "0.0.2");	
 		print("Imgui: "..tostring(self.Enabled).." v"..ver);
 
 		if self.Enabled then 
