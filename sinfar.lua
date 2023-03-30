@@ -764,7 +764,7 @@ function sinfar:HasPortraitResources(resref)
 			NWN.GetResourceExists(resref.."s", 3) and
 			NWN.GetResourceExists(resref.."t", 3);
 end
-
+--SINFAR:UpdatePlayerInfo("Takamagahara");
 function sinfar:UpdatePlayerInfo(playername)
 
 	local co = self.CO["info_"..playername];
@@ -777,13 +777,12 @@ function sinfar:UpdatePlayerInfo(playername)
 	
 		if not self:IsSinfar() then 
 			self.Print("UpdatePlayerInfo: not sinfar");
-			return;
+			--return;
 		elseif self.InfosUpdated[playername] then
-			--self.Print("UpdatePlayerInfo: Already updated "..playername);
 			return;
-		else
-			self.InfosUpdated[playername] = {Last=Runtime(), Success=false};
 		end
+		
+		self.InfosUpdated[playername] = {Last=Runtime(), Success=false};
 	
 		self.Print("Fetching player info: "..playername);
 	
@@ -798,7 +797,10 @@ function sinfar:UpdatePlayerInfo(playername)
 
 		local code, ok, contents, header = r:GetResult()
 
-		if code ~= 200 then 
+		--local test = {Code = code, Ok = ok, Contents = contents, Header = header};
+		--Debug(test);
+
+		if code ~= 200 then
 			self.Print("Unable to update player "..playername..": "..tostring(code).." "..tostring(ok));
 			return;
 		end 
