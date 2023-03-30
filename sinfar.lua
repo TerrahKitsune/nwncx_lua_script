@@ -764,7 +764,7 @@ function sinfar:HasPortraitResources(resref)
 			NWN.GetResourceExists(resref.."s", 3) and
 			NWN.GetResourceExists(resref.."t", 3);
 end
---SINFAR:UpdatePlayerInfo("Takamagahara");
+
 function sinfar:UpdatePlayerInfo(playername)
 
 	local co = self.CO["info_"..playername];
