@@ -598,12 +598,12 @@ function sinfar:IsSinfar()
 	local ply = NWN.GetPlayer();
 
 	if not ply then 
-		return Sinfarian;
+		return self.Sinfarian;
 	end 
 
-	Sinfarian = (ply.Id ~= 0);
+	self.Sinfarian = (ply.Id ~= 0);
 
-	return Sinfarian;
+	return self.Sinfarian;
 end
 
 function sinfar:IsIdPlayer(objid)
