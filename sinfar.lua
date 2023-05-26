@@ -145,7 +145,7 @@ function sinfar:AddChat(chat)
 	chat.NameColor = Gui.RGBToVec4(string.byte(r),string.byte(g),string.byte(b));
 	
 	r,g,b = chat.TextToken:match("<c(.)(.)(.)>");	
-	chat.ChannelColor = Gui.RGBToVec4(string.byte(r),string.byte(g),string.byte(b));
+	chat.ChannelColor = Gui.RGBToVec4(string.byte(r or ""),string.byte(g or ""),string.byte(b or ""));
 	
 	for n=#self.ChatLog, 1, -1 do 
 	
