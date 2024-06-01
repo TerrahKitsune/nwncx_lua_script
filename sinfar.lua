@@ -873,11 +873,11 @@ function sinfar:UpdatePlayerInfo(playername)
 						self.Print(err);
 						return false;
 					end 
-					
+
 					if self:IsPortraitUnknown(data[n].portrait) then 
-						ok, err = self.DB:Query("update characters set `Name`=@name, `LastSeen`=@lastseen WHERE `PCID`=@id", {name=data[n].charname, lastseen=data[n].lastseen, id=data[n].pcid});
+						ok, err = self.DB:Query("update characters set `Name`=@name, `LastSeen`=@lastseen, `PLID`=@plid WHERE `PCID`=@id", {name=data[n].charname, lastseen=data[n].lastseen, plid=data[n].plid, id=data[n].pcid});
 					else			
-						ok, err = self.DB:Query("update characters set `Name`=@name, `Portrait`=@portrait, `LastSeen`=@lastseen WHERE `PCID`=@id", {name=data[n].charname, portrait=data[n].portrait, lastseen=data[n].lastseen, id=data[n].pcid});
+						ok, err = self.DB:Query("update characters set `Name`=@name, `Portrait`=@portrait, `LastSeen`=@lastseen, `PLID`=@plid WHERE `PCID`=@id", {name=data[n].charname, portrait=data[n].portrait, lastseen=data[n].lastseen, plid=data[n].plid, id=data[n].pcid});
 					end 
 					
 					if not ok then 
