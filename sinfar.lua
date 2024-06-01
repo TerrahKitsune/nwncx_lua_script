@@ -593,9 +593,9 @@ function sinfar:SendWhoSpy()
 	end
 end
 
-function sinfar:IsSinfar()
+function sinfar:IsSinfar(player)
 
-	local ply = NWN.GetPlayer();
+	local ply = player or NWN.GetPlayer();
 
 	if not ply then 
 		return self.Sinfarian;
@@ -777,14 +777,14 @@ function sinfar:UpdatePlayerInfo(playername)
 	
 		if not self:IsSinfar() then 
 			self.Print("UpdatePlayerInfo: not sinfar");
-			--return;
-		elseif self.InfosUpdated[playername] then
+			return;
+		elseif self.InfosUpdated[playername] and self.InfosUpdated[playername].Success then
 			return;
 		end
 		
 		self.InfosUpdated[playername] = {Last=Runtime(), Success=false};
 	
-		self.Print("Fetching player info: "..playername);
+		--self.Print("Fetching player info: "..playername);
 	
 		local r = Http.Start("GET","https://nwn.sinfar.net/search_characters.php?player_name="..Http.UrlEncode(playername));
 		r:SetTimeout(60);
@@ -795,10 +795,7 @@ function sinfar:UpdatePlayerInfo(playername)
 			IsRunning, status, runtime, recv, send = r:GetStatus();
 		end
 
-		local code, ok, contents, header = r:GetResult()
-
-		--local test = {Code = code, Ok = ok, Contents = contents, Header = header};
-		--Debug(test);
+		local code, ok, contents, header = r:GetResult();
 
 		if code ~= 200 then
 			self.Print("Unable to update player "..playername..": "..tostring(code).." "..tostring(ok));
@@ -867,7 +864,7 @@ function sinfar:UpdatePlayerInfo(playername)
 						return false;
 					end
 					
-					if not ok or not self.DB:Fetch() or self.DB:GetRow(1) ~= data[n].pcid then 
+					if not self.DB:Fetch() or self.DB:GetRow(1) ~= data[n].pcid then 
 						self.Print("First seen character: "..data[n].charname);
 						ok, err = self.DB:Query("insert into characters (`PCID`,`PLID`,`Name`,`Portrait`,`LastSeen`)VALUES(@id, @plid, @name, @portrait, @lastseen);", {id=data[n].pcid, plid=data[n].plid, name=data[n].charname, portrait=data[n].portrait, lastseen=data[n].lastseen});
 					end 
@@ -907,7 +904,7 @@ function sinfar:UpdatePlayerInfo(playername)
 		end
 		
 		self.InfosUpdated[playername].Success = true;
-		self.Print("Fetched player info: "..playername.." "..tostring(#data).." records updated");
+		--self.Print("Fetched player info: "..playername.." "..tostring(#data).." records updated");
 	end);
 
 	self.CO["info_"..playername] = co;
@@ -1014,7 +1011,7 @@ function sinfar:DownloadPortraitByResRef(resref)
 		local archive, err = Archive.OpenRead(filename);
 		
 		if not archive then 
-			self.Debug(err);
+			self.Print(err);
 			return;
 		end 
 		
@@ -1072,12 +1069,19 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 		return ori;
 	end 
 
-	if not self:IsSinfar() then 
-		self.Print("DownloadPortraitIfMissing: not sinfar");
-		return;
-	end
-
 	local characterid = obj.Id.."_"..obj.ObjectId;
+
+	if self.Portraits[characterid] then	
+		return self.Portraits[characterid];
+	elseif self.CO[characterid] then
+		return ori;
+	end 
+
+	if not self:IsSinfar() then
+		self.Portraits[characterid] = ori;
+		self.Print("DownloadPortraitIfMissing: not sinfar");
+		return ori;
+	end
 
 	local ok, err = self.DB:Query([[select Portrait from characters join players on characters.PLID=players.PLID where players.Name like @p and characters.Name like @c order by characters.LastSeen desc;]], {p=Wchar.FromAnsi(obj.Name), c=Wchar.FromAnsi(obj.CharacterName)});
 
@@ -1090,23 +1094,9 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 		end
 	end
 	
-	if self.Portraits[characterid] then 
-		return self.Portraits[characterid];
-	elseif self.CO[characterid] then
-		return ori;
-	end 
+	self.Portraits[characterid] = ori;
 	
 	local co = coroutine.create(function ()
-	
-		if not self:IsPortraitUnknown(ori) and self:HasPortraitResources(ori) then 
-			return;
-		end 
-	
-		local obj = NWN.GetPlayer(playerid);
-		
-		if not obj then
-			return;
-		end 
 	
 		local characterid = obj.Id.."_"..obj.ObjectId;
 	
@@ -1447,14 +1437,13 @@ function sinfar:UpdateInGameData(objid)
 		
 		if not obj then 
 			return;
-		elseif not self:IsSinfar() then 
-			self.Print("UpdateInGameData: not sinfar");
-			return;
 		end
 
 		local ply = NWN.GetPlayerByObjectId(obj.Id);
 
 		if not ply then 
+			return;
+		elseif not self:IsSinfar(ply) then 
 			return;
 		end
 		
