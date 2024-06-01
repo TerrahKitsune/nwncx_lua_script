@@ -784,7 +784,7 @@ function sinfar:UpdatePlayerInfo(playername)
 		
 		self.InfosUpdated[playername] = {Last=Runtime(), Success=false};
 	
-		--self.Print("Fetching player info: "..playername);
+		print("Fetching player info: "..playername);
 	
 		local r = Http.Start("GET","https://nwn.sinfar.net/search_characters.php?player_name="..Http.UrlEncode(playername));
 		r:SetTimeout(60);
@@ -904,7 +904,7 @@ function sinfar:UpdatePlayerInfo(playername)
 		end
 		
 		self.InfosUpdated[playername].Success = true;
-		--self.Print("Fetched player info: "..playername.." "..tostring(#data).." records updated");
+		print("Fetched player info: "..playername.." "..tostring(#data).." records updated");
 	end);
 
 	self.CO["info_"..playername] = co;
