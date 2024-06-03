@@ -1254,10 +1254,10 @@ function sinfar:LogChat(chat, type, playerId, resref)
 					send.NameToken = parts[1].Token;
 					send.Text = parts[2].Text;
 					
-					if send.Text == "" then
+					if send.Text == "" and #parts > 2 then
 						send.Text = parts[3].Text;
 						send.TextToken = parts[3].Token;
-					else 
+					else
 						send.TextToken = parts[2].Token;
 					end
 
