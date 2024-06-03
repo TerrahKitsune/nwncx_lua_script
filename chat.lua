@@ -456,7 +456,20 @@ function CHAT:ResetColors(del)
 	end
 end
 
+CHAT.InvalidCharPattern = "["..string.char(13).."]";
+
+function CHAT:StripInvalidCharacters(text)
+
+	if not text then
+		return "";
+	end 
+
+	return text:gsub(self.InvalidCharPattern, "");
+end
+
 function CHAT:DoPrint(text, type, resref, playerId, isPlayer)
+
+	text = self:StripInvalidCharacters(text);
 
 	self.CT:Clear();
 	self.CT:Parse(text);
