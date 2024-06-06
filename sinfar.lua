@@ -1127,8 +1127,20 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 			return;
 		end
 	
-		if self:HasPortraitResources(portrait) then 
-			NWN.SetPortrait(obj.ObjectId, portrait);
+		local gameObject = NWN.GetGameObject(obj.ObjectId);
+	
+		if not gameObject then
+			return;
+		end
+	
+		if self:HasPortraitResources(portrait) then
+		
+			print("Set Portrait: "..gameObject.Portrait.." -> "..portrait);
+		
+			if gameObject.Portrait ~= portrait then	
+				NWN.SetPortrait(obj.ObjectId, portrait);
+			end
+			
 			self.Portraits[characterid] = portrait;
 			return;
 		end 
@@ -1140,7 +1152,9 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 		end
 
 		if NWN.UpdatePortraitResourceDirectory() and self:HasPortraitResources(portrait) then
-			NWN.SetPortrait(obj.ObjectId, portrait);
+			if gameObject.Portrait ~= portrait then	
+				NWN.SetPortrait(obj.ObjectId, portrait);
+			end
 			self.Portraits[characterid] = portrait;
 			return;
 		end
@@ -1184,7 +1198,9 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 		coroutine.yield();
 	
 		if NWN.PortraitConvert(portrait) and self:HasPortraitResources(portrait) then 
-			NWN.SetPortrait(obj.ObjectId, portrait);
+			if gameObject.Portrait ~= portrait then	
+				NWN.SetPortrait(obj.ObjectId, portrait);
+			end
 			self.Portraits[characterid] = portrait;
 			self.Print("Portrait converted: "..portrait);
 		else 	
