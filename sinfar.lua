@@ -1134,9 +1134,7 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 		end
 	
 		if self:HasPortraitResources(portrait) then
-		
-			print("Set Portrait: "..gameObject.Portrait.." -> "..portrait);
-		
+
 			if gameObject.Portrait ~= portrait then	
 				NWN.SetPortrait(obj.ObjectId, portrait);
 			end
