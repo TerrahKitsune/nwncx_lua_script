@@ -427,7 +427,7 @@ if VARS then
 end 
 
 if CHAT then 
-	CHAT:Start(sqlite, SINFAR, CONSOLE, COMMANDS);
+	CHAT:Start(sqlite, SINFAR, CONSOLE, COMMANDS, VARS);
 end
 
 if COMMANDS then 

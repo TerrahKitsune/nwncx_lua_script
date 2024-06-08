@@ -1,4 +1,3 @@
-
 local color = {};
 
 color.rgbtohsl = function(r, g, b)

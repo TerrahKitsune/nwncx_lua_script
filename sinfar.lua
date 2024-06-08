@@ -104,6 +104,36 @@ function sinfar:Start(printfunc, db, chat, COMMANDS, IMGUI)
 	self.selectedName = "";
 end 
 
+function sinfar:GetPortraitFolder()
+
+	if self.PortraitFolder then
+		return self.PortraitFolder;
+	end
+
+	self.PortraitFolder = "./portraits/";
+
+	local f = io.open("nwn.ini", "r");
+	if f then	
+		local rawIni = f:read("*all");
+		f:close();
+		
+		local folder = rawIni:match("PORTRAITS=(.-)[\r,\n]");
+		if folder then
+			folder = folder:gsub("\\", "/");
+			
+			if not folder:match("/$") then
+				folder = folder .. "/";
+			end
+			
+			self.PortraitFolder = folder;
+		end
+	end
+
+	self.Print("Using portrait folder: "..self.PortraitFolder);
+
+	return self.PortraitFolder;
+end
+
 function sinfar:PopulateChatlogData(limit)
 
 	self.ChatLog = {};
@@ -977,7 +1007,7 @@ function sinfar:DownloadPortraitByResRef(resref)
 			filename = resref..".7z";
 		end
 		
-		filename = "./portraits/"..filename;
+		filename = self:GetPortraitFolder()..filename;
 
 		local f = io.open(filename, "wb");
 		
@@ -1024,12 +1054,12 @@ function sinfar:DownloadPortraitByResRef(resref)
 
 			if file:match(".+[hHlLmMsStT]%.[tT][gG][aA]$") then 
 				
-				self.Print("Extracting ".."./portraits/"..file);
+				self.Print("Extracting "..self:GetPortraitFolder()..file);
 				
 				data = archive:Read();
 				
 				if data then 
-					f = assert(io.open("./portraits/"..file, "wb"));
+					f = assert(io.open(self:GetPortraitFolder()..file, "wb"));
 
 					while data do 
 						coroutine.yield();
@@ -1182,9 +1212,9 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 		
 		coroutine.yield();
 		
-		local f = io.open("./portraits/"..portrait..".jpg", "wb");
+		local f = io.open(self:GetPortraitFolder()..portrait..".jpg", "wb");
 		if not f then 
-			self.Print("Failed to open file for write ".."./portraits/"..portrait..".jpg");
+			self.Print("Failed to open file for write "..self:GetPortraitFolder()..portrait..".jpg");
 			self.Portraits[characterid] = ori;
 			return;
 		end
@@ -1206,7 +1236,7 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 			self.Print("Failed to convert portrait "..portrait);
 		end
 		
-		FileSystem.Delete("./portraits/"..portrait..".jpg");
+		FileSystem.Delete(self:GetPortraitFolder()..portrait..".jpg");
 	end);
 	
 	

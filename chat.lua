@@ -119,6 +119,10 @@ end
 
 function CHAT:ColorReplace(ct)
 
+	if self.ColorDisabled then
+		return;
+	end 
+
 	local parsed = ct:GetAsParts(); 
 	local color;
 	
@@ -514,7 +518,7 @@ function CHAT:NWNPrint(text)
 	self:DoPrint("<c"..string.char(254,1,254)..">**Lua:** "..text.."</c>", 32, "", 0, false);
 end
 
-function CHAT:Start(db, sinfar, console, commands)
+function CHAT:Start(db, sinfar, console, commands, vars)
 
 	self.console = console;
 	self.sinfar = sinfar;
@@ -526,6 +530,8 @@ function CHAT:Start(db, sinfar, console, commands)
 	"Lock"	INTEGER NOT NULL,
 	PRIMARY KEY("Tag")
 )]]);
+
+	self.WebNoteDisable = vars:Get("ColorDisabled", false);
 
 	commands:AddCommand("resetcolor", function(param) 
 		self:SetNameColor(param);
@@ -561,7 +567,14 @@ function CHAT:Start(db, sinfar, console, commands)
 			Debug("Disabled webclient join/leave messages");
 			self.WebNoteDisable = true;
 		end
-	end, "Toggles webclietn join/leave messages");
+	end, "Toggles webclient join/leave messages");
+	
+	commands:AddCommand("togglenamecolor", function(param) 
+
+		self.ColorDisabled = not self.ColorDisabled;
+		vars:Set("ColorDisabled", self.ColorDisabled);
+		Debug("Disable Name Colors: "..tostring(self.ColorDisabled));
+	end, "Resets the color for a given name");
 end
 
 return CHAT;
