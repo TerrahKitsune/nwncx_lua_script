@@ -11,6 +11,7 @@ CHAT = dofile(FOLDER.."chat.lua");
 COMMANDS = dofile(FOLDER.."commands.lua");
 VARS = dofile(FOLDER.."globalvar.lua");
 IMGUI = dofile(FOLDER.."imgui.lua");
+SHAREDQUEUE = dofile(FOLDER.."sharedmemoryqueue.lua");
 
 function PrintAll(tbl, depth, alreadyprinted)
 
@@ -60,14 +61,14 @@ function Debug(text)
 	end
 end
 
-Hook.HookAppendToBuffer(function(text, type, resref, playerId, isPlayer) 
+Hook.HookAppendToBuffer(function(text, type, resref, playerId, isPlayer, objectId) 
 
 	if type == 128 and SINFAR and SINFAR:WhoSpy(text) then 
 		return false;
 	end
 
 	if CHAT then 
-		return CHAT:DoPrint(text, type, resref, playerId, isPlayer);
+		return CHAT:DoPrint(text, type, resref, playerId, isPlayer, objectId);
 	end
 end);
 
@@ -231,6 +232,21 @@ Hook.HookMainLoop(function()
 	
 	if SINFAR then
 		SINFAR:Tick();
+	end
+	
+	if CHAT then
+		CHAT:Tick();
+	end
+	
+	if SHAREDQUEUE and SHAREDQUEUE:HasMessages() then
+		local msgs = SHAREDQUEUE:GetMessages();
+		if #msgs > 0 then
+			for n=1, #msgs do
+				if not msgs[n].IsSelf then
+					print(msgs[n].Id..": "..msgs[n].Text);
+				end
+			end		
+		end
 	end
 end);
 
@@ -427,7 +443,7 @@ if VARS then
 end 
 
 if CHAT then 
-	CHAT:Start(sqlite, SINFAR, CONSOLE, COMMANDS, VARS);
+	CHAT:Start(sqlite, SINFAR, CONSOLE, COMMANDS, VARS, SHAREDQUEUE);
 end
 
 if COMMANDS then 

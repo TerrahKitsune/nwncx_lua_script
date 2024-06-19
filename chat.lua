@@ -1,4 +1,4 @@
-local CHAT = {CT = ColorToken.Create(), savedColors={},ColorTagReplace={}, sinfar=nil, console=nil};
+local CHAT = {CT = ColorToken.Create(), savedColors={},ColorTagReplace={}, sinfar=nil, console=nil, TtsQueue={}, TTSDisabled=true};
 
 CHAT.color = dofile(FOLDER.."color.lua");
 
@@ -98,7 +98,7 @@ function CHAT:GetTextBubble(text, objid)
 		local ply = NWN.GetPlayerByObjectId(objid);
 	
 		if dist then
-			debugData = debugData .. " "..tostring(dist).." ft\n";
+			debugData = debugData .. " "..tostring(dist).." ft "..(obj.Gender or "").."\n";
 			
 			debugData = debugData .. "x: "..tostring(math.floor(obj.Position.x*100)/100);
 			debugData = debugData .. " y: "..tostring(math.floor(obj.Position.y*100)/100);
@@ -471,12 +471,19 @@ function CHAT:StripInvalidCharacters(text)
 	return text:gsub(self.InvalidCharPattern, "");
 end
 
-function CHAT:DoPrint(text, type, resref, playerId, isPlayer)
+function CHAT:DoPrint(text, type, resref, playerId, isPlayer, objectId)
 
-	text = self:StripInvalidCharacters(text);
+	objectId = objectId or "7f000000";
 
 	self.CT:Clear();
 	self.CT:Parse(text);
+	
+	for n=1, self.CT:Highest() do
+		local node = self.CT:GetNode(n);
+		if node.Type == 0 then
+			self.CT:SetText(node.Id, self:StripInvalidCharacters(node.Text));
+		end
+	end
 	
 	if type == 32 then
 		self:HandleJoinLeave(self.CT);
@@ -508,21 +515,98 @@ function CHAT:DoPrint(text, type, resref, playerId, isPlayer)
 	local text = self.CT:ToString();
 	
 	if text and text ~= "" then
+		
 		NWN.AppendTobuffer(text, type, resref, playerId, isPlayer);
+		
+		if 	type == 1 or
+			type == 2 or
+			type == 8 or
+			type == 64 or 
+			type == 1024 then 
+
+			if not self.TTSDisabled and TTS then 
+				self:Speak(self.CT:Strip());
+			end
+		end
+
+		if self.queue then
+			
+			local objects = {};
+			local players = {};
+			objects[objectId] = NWN.GetGameObject(objectId);
+			
+			if isPlayer then
+				players[playerId] = NWN.GetPlayer(playerId);
+			else
+				playerId = nil;
+			end
+			
+			local slf = NWN.GetPlayer();
+			
+			if slf then
+				players[slf.Id] = slf;
+				objects[slf.ObjectId] = NWN.GetGameObject(slf.ObjectId);
+			else
+				slf = {Id = nil, ObjectId="7f000000"};
+			end
+			
+			local area = NWN.GetArea();
+			
+			if area then
+				objects[area.Id] = area;
+			else
+				area = {Id="7f000000"};
+			end
+			
+			self.queue:PostMessage(self.json:Encode({Type="Chat", Data = {Text=text, Type=type, ResRef=resref, AreaId = area.Id, ObjectId = objectId, PlayerId = playerId, SelfPlayerId = slf.Id, SelfObjectId = slf.ObjectId}, Objects = objects, Players = players}));
+		end
 	end 
 	
 	return false;
+end
+
+function CHAT:Speak(text)
+	table.insert(self.TtsQueue, text);
+end
+
+CHAT.TTSCoroutine = coroutine.create(function ()
+	
+	while not TTS do
+		coroutine.yield();
+	end
+	
+	local tts = TTS.Create();
+	local q = CHAT.TtsQueue;
+	
+	while true do
+	
+		if not tts:GetIsSpeaking() and #q > 0 then
+			local text = table.remove(q, 1);
+			if not CHAT.TTSDisabled then
+				print(tostring(#q).." TTS: "..text);
+				tts:Speak(text, 0);
+			end
+		end
+		
+		coroutine.yield();
+	end
+end);
+
+function CHAT:Tick()
+	coroutine.resume(self.TTSCoroutine);
 end
 
 function CHAT:NWNPrint(text)
 	self:DoPrint("<c"..string.char(254,1,254)..">**Lua:** "..text.."</c>", 32, "", 0, false);
 end
 
-function CHAT:Start(db, sinfar, console, commands, vars)
+function CHAT:Start(db, sinfar, console, commands, vars, sharedqueue)
 
 	self.console = console;
 	self.sinfar = sinfar;
 	self.sqlite = db;
+	self.queue = sharedqueue;
+	self.json = Json.Create();
 	
 	db:Query([[CREATE TABLE "colors" (
 	"Tag"	TEXT NOT NULL,
@@ -568,6 +652,16 @@ function CHAT:Start(db, sinfar, console, commands, vars)
 			self.WebNoteDisable = true;
 		end
 	end, "Toggles webclient join/leave messages");
+	
+	commands:AddCommand("tts", function(param) 
+		if self.TTSDisabled then 
+			Debug("Enabled TTS");
+			self.TTSDisabled = false;
+		else
+			Debug("Disabled TTS");
+			self.TTSDisabled = true;
+		end
+	end, "Toggles TTS");
 	
 	commands:AddCommand("togglenamecolor", function(param) 
 

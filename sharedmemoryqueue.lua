@@ -1,9 +1,12 @@
-local SharedQueue = {QIdOffset = 0, QCountOffset=38, QLockOffset=37, QCommitOffset=40, QFirstMsgOffset=48, MaxSize = 1048576, RetentionTime = 5};
+if not UUID then print("SharedQueue disabled"); return nil; end
+local SharedQueue = {QIdOffset = 0, QCountOffset=38, QLockOffset=37, QCommitOffset=40, QFirstMsgOffset=48, MaxSize = 1048576, RetentionTime = 5, Commit = -1};
 
-SharedQueue.Q = Stream.CreateSharedMemoryStream("Global\\NWN", SharedQueue.MaxSize) or Stream.CreateSharedMemoryStream("NWN", SharedQueue.MaxSize);
+SharedQueue.Q = Stream.CreateSharedMemoryStream("Local\\NWN", SharedQueue.MaxSize) or Stream.CreateSharedMemoryStream("NWN", SharedQueue.MaxSize);
 SharedQueue.QId = SharedQueue.Q:Read(37);
 SharedQueue.QId = SharedQueue.QId:match("(........%-....%-....%-....%-............)|");
 SharedQueue.Id = UUID();
+
+Sleep = Sleep or function() end;
 
 if SharedQueue.QId then
 	print("Existing: "..SharedQueue.QId);
@@ -41,13 +44,13 @@ function SharedQueue:SetLocked(isReading, isWrite)
 			if isWrite then
 			
 				Sleep();			
-				if tries > 5000 then
+				if tries > 1000 then
 					break;
 				end
 			else				
-				if tries > 10000 then
+				if tries > 1000 then
 					Sleep();
-				elseif tries > 15000 then
+				elseif tries > 1500 then
 					break;
 				end			
 			end
@@ -80,8 +83,6 @@ function SharedQueue:GetCommit()
 	self.Q:Seek(self.QCommitOffset);
 	return self.Q:ReadLong();
 end
-
-SharedQueue.Commit = 0;
 
 function SharedQueue:PostMessage(msg)
 
@@ -169,6 +170,11 @@ function SharedQueue:Rebalance()
 	self:SetLocked(false);
 end
 
+function SharedQueue:HasMessages()
+	
+	return self:GetCommit() > self.Commit;
+end
+
 function SharedQueue:GetMessages()
 
 	self:SetLocked(true, false);
@@ -195,10 +201,10 @@ function SharedQueue:GetMessages()
 			msg.Commit = commit;
 			msg.Time = msgTime;
 			msg.Text = self.Q:Read(len - 16);
-			self.Commit = msg.Commit;
 			self:SetLocked(false);
 			
 			msg.Id, msg.Text = msg.Text:match("(.-)|(.+)");
+			msg.IsSelf = msg.Id == self.Id;
 			
 			table.insert(result, msg);
 			
@@ -210,6 +216,8 @@ function SharedQueue:GetMessages()
 		hasMsg = self.Q:ReadByte() == 1;	
 	end
 	
+	self.Commit = self:GetCommit();
+	
 	self:SetLocked(false);
 	
 	if hasOldMessages then
@@ -217,41 +225,6 @@ function SharedQueue:GetMessages()
 	end
 	
 	return result;
-end
-
-SharedQueue:PostMessage("Test 1");
-SharedQueue:PostMessage("Test 2");
-SharedQueue:PostMessage("Test 3");
-SharedQueue:PostMessage("Test 4");
-SharedQueue:PostMessage("Test 5");
-
-while false do
-	print(SharedQueue:PostMessage(UUID()));
-end
-
-local function Dump(str)
-	
-	for i = 1, #str do
-		local char = string.sub(str, i, i)
-		io.write(char)
-	end
-	print("");
-end
-
-SharedQueue.Q:Seek();
---Dump(SharedQueue.Q:Read(1000));
-local msgs;
-
-while true do 
-	Sleep(1000); 
-	print(SharedQueue:GetCount(), SharedQueue:IsLocked(), SharedQueue:GetCommit());
-	msgs = SharedQueue:GetMessages();
-	while #msgs > 0 do
-		for _, msg in ipairs(msgs) do
-			print(SharedQueue:GetCount(), msg.Time, msg.Commit, msg.Id, msg.Text);
-		end
-		msgs = SharedQueue:GetMessages();
-	end
 end
 
 return SharedQueue;
