@@ -1,4 +1,4 @@
-local CHAT = {CT = ColorToken.Create(), savedColors={},ColorTagReplace={}, sinfar=nil, console=nil, TtsQueue={}, TTSDisabled=true};
+local CHAT = {CT = ColorToken.Create(), savedColors={},ColorTagReplace={}, sinfar=nil, console=nil, TtsQueue={}, TTSDisabled=true, StripTokens=false};
 
 CHAT.color = dofile(FOLDER.."color.lua");
 
@@ -471,6 +471,57 @@ function CHAT:StripInvalidCharacters(text)
 	return text:gsub(self.InvalidCharPattern, "");
 end
 
+function CHAT:IsLocalChannel(type)
+	if 	type == 1 or
+		type == 2 or
+		type == 8 or
+		type == 64 or 
+		type == 1024 then
+		return true;
+	else
+		return false;
+	end
+end
+
+function CHAT:StripLocalChannelColorTokens(ct, specialChannel)
+
+	if not self.StripTokens or ct:Highest() < 2 then
+		return ct;
+	end
+
+	local node = ct:GetNode(1);
+	
+	if not node then 
+		return ct;
+	end
+	
+	local character = node.Text;
+	local rest = "";
+	local characterToken = node.Token;
+	local restToken = nil;
+	
+	local offset = 2;
+	
+	if specialChannel then
+		offset = offset + 1;
+	end
+	
+	for n=offset, ct:Highest() do
+		
+		node = ct:GetNode(n);
+		rest = rest .. node.Text;
+		
+		if not restToken then
+			restToken = node.Token;
+		end
+	end
+
+	ct:Clear();
+	ct:Parse(characterToken..character.."</c>"..restToken..rest.."</c>");
+	
+	return ct;
+end
+
 function CHAT:DoPrint(text, type, resref, playerId, isPlayer, objectId)
 
 	objectId = objectId or "7f000000";
@@ -493,6 +544,10 @@ function CHAT:DoPrint(text, type, resref, playerId, isPlayer, objectId)
 	
 	if isPlayer then
 		p = NWN.GetPlayer(playerId);
+		
+		if self:IsLocalChannel(type) then
+			self.CT = self:StripLocalChannelColorTokens(self.CT, type == 1024);
+		end
 	end
 	
 	Log(resref.."\t"..type.."\t"..self.CT:Strip().."\t"..playerId.."\t"..tostring(isPlayer));
@@ -511,23 +566,16 @@ function CHAT:DoPrint(text, type, resref, playerId, isPlayer, objectId)
 	elseif self.sinfar then
 		self.sinfar:LogChat(self.CT, type, nil, resref:sub(1, resref:len()-1));
 	end
-	
+
 	local text = self.CT:ToString();
 	
 	if text and text ~= "" then
 		
 		NWN.AppendTobuffer(text, type, resref, playerId, isPlayer);
 		
-		if 	type == 1 or
-			type == 2 or
-			type == 8 or
-			type == 64 or 
-			type == 1024 then 
-
-			if not self.TTSDisabled and TTS then 
-				self:Speak(self.CT:Strip());
-			end
-		end
+		if self:IsLocalChannel(type) and not self.TTSDisabled and TTS then 
+			self:Speak(self.CT:Strip());
+		end		
 
 		if self.queue then
 			
@@ -616,6 +664,7 @@ function CHAT:Start(db, sinfar, console, commands, vars, sharedqueue)
 )]]);
 
 	self.WebNoteDisable = vars:Get("ColorDisabled", false);
+	self.StripTokens = vars:Get("StripTokens", false);
 
 	commands:AddCommand("resetcolor", function(param) 
 		self:SetNameColor(param);
@@ -662,13 +711,20 @@ function CHAT:Start(db, sinfar, console, commands, vars, sharedqueue)
 			self.TTSDisabled = true;
 		end
 	end, "Toggles TTS");
-	
+
 	commands:AddCommand("togglenamecolor", function(param) 
 
 		self.ColorDisabled = not self.ColorDisabled;
 		vars:Set("ColorDisabled", self.ColorDisabled);
 		Debug("Disable Name Colors: "..tostring(self.ColorDisabled));
 	end, "Resets the color for a given name");
+	
+	commands:AddCommand("togglecolortokens", function(param) 
+
+		self.StripTokens = not self.StripTokens;
+		vars:Set("StripTokens", self.StripTokens);
+		Debug("Disable Webclient Colors: "..tostring(self.StripTokens));
+	end, "Toggles disabling colortokens in the chat from players");
 end
 
 return CHAT;
