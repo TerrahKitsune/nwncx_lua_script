@@ -502,7 +502,7 @@ function CHAT:StripLocalChannelColorTokens(ct, specialChannel)
 	
 	local offset = 2;
 	
-	if specialChannel then
+	if specialChannel and ct:Highest() > 2 and ct:GetNode(3).Text:match("^%[") then
 		offset = offset + 1;
 	end
 	
@@ -517,7 +517,7 @@ function CHAT:StripLocalChannelColorTokens(ct, specialChannel)
 	end
 
 	ct:Clear();
-	ct:Parse(characterToken..character.."</c>"..restToken..rest.."</c>");
+	ct:Parse(characterToken..character.."</c>"..(restToken or "")..rest.."</c>");
 	
 	return ct;
 end
