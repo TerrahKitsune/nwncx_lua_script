@@ -1,10 +1,12 @@
 if not UUID then print("SharedQueue disabled"); return nil; end
 local SharedQueue = {QIdOffset = 0, QCountOffset=38, QLockOffset=37, QCommitOffset=40, QFirstMsgOffset=48, MaxSize = 1048576, RetentionTime = 5, Commit = -1};
 
+QueueId = QueueId or UUID();
+
 SharedQueue.Q = Stream.CreateSharedMemoryStream("Local\\NWN", SharedQueue.MaxSize) or Stream.CreateSharedMemoryStream("NWN", SharedQueue.MaxSize);
 SharedQueue.QId = SharedQueue.Q:Read(37);
 SharedQueue.QId = SharedQueue.QId:match("(........%-....%-....%-....%-............)|");
-SharedQueue.Id = UUID();
+SharedQueue.Id = QueueId;
 
 Sleep = Sleep or function() end;
 
