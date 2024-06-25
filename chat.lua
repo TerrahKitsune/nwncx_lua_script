@@ -534,8 +534,8 @@ function CHAT:SetChannelColor(ct, type)
 		return;
 	end 
 
-	if channelNode.Token:match("<c...>") and self.Channels[channel] then
-		ct:SetColor(channelNode.Id, self:ChatColor(channel));
+	if channelNode.Token:match("<c...>") then
+		ct:SetColor(channelNode.Id, self:ChatColor(channel, channelNode.Token));
 	end
 	
 	if type ~= 1024 then return; end
@@ -547,7 +547,7 @@ function CHAT:SetChannelColor(ct, type)
 	end 
 
 	if channelNode.Token:match("<c...>") and self.Channels[channel] then
-		ct:SetColor(channelNode.Id, self:ChatColor(channel));
+		ct:SetColor(channelNode.Id, self:ChatColor(channel, channelNode.Token));
 	end
 end
 
@@ -727,7 +727,7 @@ function CHAT:NWNPrint(text)
 	self:DoPrint("<c"..string.char(254,1,254)..">**Lua:** "..text.."</c>", 32, "", 0, false);
 end
 
-function CHAT:ChatColor(channel)
+function CHAT:ChatColor(channel, existingToken)
 
 	channel = channel:lower();
 
@@ -772,7 +772,9 @@ function CHAT:ChatColor(channel)
 		end
 	end
 	
-	return self.Channels[channel] or self.Channels["talk"];
+	existingToken = existingToken or self.Channels["talk"];
+	
+	return self.Channels[channel] or existingToken;
 end
 
 function CHAT:Start(db, sinfar, console, commands, vars, sharedqueue)
