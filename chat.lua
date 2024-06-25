@@ -513,6 +513,10 @@ function CHAT:GetChannel(ct, type)
 
 	channel = channel or "talk";
 
+	if channel:match("%(") then
+		channel = channel:match("(.-)%s");
+	end
+
 	return channel:lower();
 end
 
@@ -530,7 +534,7 @@ function CHAT:SetChannelColor(ct, type)
 		return;
 	end 
 
-	if channelNode.Token:match("<c...>") then
+	if channelNode.Token:match("<c...>") and self.Channels[channel] then
 		ct:SetColor(channelNode.Id, self:ChatColor(channel));
 	end
 	
@@ -542,7 +546,7 @@ function CHAT:SetChannelColor(ct, type)
 		return;
 	end 
 
-	if channelNode.Token:match("<c...>") then
+	if channelNode.Token:match("<c...>") and self.Channels[channel] then
 		ct:SetColor(channelNode.Id, self:ChatColor(channel));
 	end
 end
