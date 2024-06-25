@@ -506,7 +506,7 @@ function CHAT:GetChannel(ct, type)
 
 	if not channel then
 		channelNode = ct:GetNode(3);
-		if channelNode.Token:match("<c...>") then
+		if channelNode and channelNode.Token:match("<c...>") then
 			channel = channelNode.Text:match("^%[(.-)%]");
 		end
 	end
@@ -524,7 +524,7 @@ function CHAT:SetChannelColor(ct, type)
 
 	local channel = self:GetChannel(ct, type);
 
-	if channel == "talk" then
+	if not channel or channel == "talk" then
 		return;
 	end 
 
