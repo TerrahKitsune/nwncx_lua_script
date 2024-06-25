@@ -117,7 +117,7 @@ function sinfar:GetPortraitFolder()
 		local rawIni = f:read("*all");
 		f:close();
 		
-		local folder = rawIni:match("PORTRAITS=(.-)[\r,\n]");
+		local folder = rawIni:match("PORTRAITS=(.-)[\r\n]");
 		if folder then
 			folder = folder:gsub("\\", "/");
 			

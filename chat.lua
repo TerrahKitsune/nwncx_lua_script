@@ -67,11 +67,11 @@ function CHAT:GetTextBubble(text, objid)
 			if s.Id == obj.Id then
 				channel = nil;
 			elseif dist <= 0.5 then 
-				channel = "<c"..string.char(254,200,254)..">Silent</c>";
+				channel = self:ChatColor("silent") .. "Silent</c>";
 			elseif dist <= 1.0 then 
-				channel = "<c"..string.char(254,100,254)..">Quiet</c>";
+				channel = self:ChatColor("quiet") .."Quiet</c>";
 			elseif dist <= 3.0 then 
-				channel = "<c"..string.char(254,50,254)..">Whisper</c>";
+				channel = self:ChatColor("whisper") .."Whisper</c>";
 			else 
 				channel = nil;
 			end
@@ -474,12 +474,76 @@ end
 function CHAT:IsLocalChannel(type)
 	if 	type == 1 or
 		type == 2 or
+		type == 4 or
 		type == 8 or
 		type == 64 or 
 		type == 1024 then
 		return true;
 	else
 		return false;
+	end
+end
+
+function CHAT:GetChannel(ct, type)
+
+	if not self:IsLocalChannel(type) then
+		return nil;
+	elseif type == 1 then 
+		return "talk";
+	end 
+
+	local channelNode = ct:GetNode(2);
+	
+	if not channelNode then
+		return "talk";
+	end 
+	
+	local channel = "";
+	
+	if channelNode.Token:match("<c...>") then
+		channel = channelNode.Text:match("^%[(.-)%]");
+	end
+
+	if not channel then
+		channelNode = ct:GetNode(3);
+		if channelNode.Token:match("<c...>") then
+			channel = channelNode.Text:match("^%[(.-)%]");
+		end
+	end
+
+	channel = channel or "talk";
+
+	return channel:lower();
+end
+
+function CHAT:SetChannelColor(ct, type)
+
+	local channel = self:GetChannel(ct, type);
+
+	if channel == "talk" then
+		return;
+	end 
+
+	local channelNode = ct:GetNode(2);
+
+	if not channelNode then
+		return;
+	end 
+
+	if channelNode.Token:match("<c...>") then
+		ct:SetColor(channelNode.Id, self:ChatColor(channel));
+	end
+	
+	if type ~= 1024 then return; end
+	
+	channelNode = ct:GetNode(3);
+	
+	if not channelNode then
+		return;
+	end 
+
+	if channelNode.Token:match("<c...>") then
+		ct:SetColor(channelNode.Id, self:ChatColor(channel));
 	end
 end
 
@@ -528,6 +592,17 @@ function CHAT:DoPrint(text, type, resref, playerId, isPlayer, objectId)
 
 	self.CT:Clear();
 	self.CT:Parse(text);
+	self:SetChannelColor(self.CT, type);
+	
+	if DEBUG then
+	
+		local test = "";
+		for n=1, self.CT:Highest() do		
+			local node = self.CT:GetNode(n);	
+			test = test .. self:TagToReadable(node.Token) .. node.Text;	
+		end
+		Debug(test);
+	end
 	
 	for n=1, self.CT:Highest() do
 		local node = self.CT:GetNode(n);
@@ -646,6 +721,54 @@ end
 
 function CHAT:NWNPrint(text)
 	self:DoPrint("<c"..string.char(254,1,254)..">**Lua:** "..text.."</c>", 32, "", 0, false);
+end
+
+function CHAT:ChatColor(channel)
+
+	channel = channel:lower();
+
+	if not self.Channels then
+		local f = io.open("nwnplayer.ini", "r");
+		if f then	
+			local rawIni = f:read("*all");
+			f:close();
+			
+			local section = rawIni:match("%[Chat Colors%](.-)%[");
+			if not section or section == "" then
+				section = rawIni:match("%[Chat Colors%](.-)$");
+			end
+
+			self.Channels = {};
+			
+			self.Channels["whisper"] = "<c"..string.char(128)..string.char(128)..string.char(128)..">";
+			self.Channels["quiet"] = "<c"..string.char(64)..string.char(64)..string.char(64)..">";
+			self.Channels["silent"] = "<c"..string.char(48)..string.char(48)..string.char(48)..">";
+			self.Channels["talk"] = "<c"..string.char(249)..string.char(240)..string.char(240)..">";
+			
+			if section then	
+				for k,v in section:gmatch("(%a-)Color=(.-)[\n\r]") do
+				
+					local r,g,b = v:match("^(.-),(.-),(.-)$");
+					
+					print(k, v, r,g,b);
+					
+					r = tonumber(r);
+					g = tonumber(g);
+					b = tonumber(b);
+				
+					if k and k ~= "" and r and g and b then
+						self.Channels[k:lower()] = "<c"..string.char(r)..string.char(g)..string.char(b)..">";
+					end
+				end
+			end
+			
+			--for k,v in pairs(self.Channels) do
+			--	Debug(k..": "..v..self:TagToReadable(v).."</c>");
+			--end
+		end
+	end
+	
+	return self.Channels[channel] or self.Channels["talk"];
 end
 
 function CHAT:Start(db, sinfar, console, commands, vars, sharedqueue)
