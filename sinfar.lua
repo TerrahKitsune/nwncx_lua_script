@@ -1095,7 +1095,7 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 
 	local obj = NWN.GetPlayer(playerid);
 		
-	if not obj then 
+	if not obj or not NWN.GetArea() then
 		return ori;
 	end 
 

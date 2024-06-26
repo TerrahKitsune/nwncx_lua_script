@@ -594,6 +594,8 @@ function CHAT:DoPrint(text, type, resref, playerId, isPlayer, objectId)
 
 	objectId = objectId or "7f000000";
 
+	local obj = NWN.GetGameObject(objectId);
+
 	self.CT:Clear();
 	self.CT:Parse(text);
 	self:SetChannelColor(self.CT, type);
@@ -629,12 +631,19 @@ function CHAT:DoPrint(text, type, resref, playerId, isPlayer, objectId)
 		end
 	end
 	
-	Log(resref.."\t"..type.."\t"..self.CT:Strip().."\t"..playerId.."\t"..tostring(isPlayer));
-	Console.Write(resref.."\t"..type.." "..playerId.." "..tostring(isPlayer).."\t");
-	
 	self:ColorReplace(self.CT);
-	self.console:ColorPrint(self.CT);
 	
+	local log = objectId;
+	
+	if obj then
+		log = log .. " ("..obj.Name..")";
+	end
+	
+	log = log .." "..resref.." "..type.." "..playerId.." "..tostring(isPlayer).." "..self.CT:Strip();
+	
+	Log(log);
+	print(log);
+
 	if isPlayer and self.sinfar then 
 		local strippedresref = resref:sub(1, resref:len()-1);
 		strippedresref = self.sinfar:DownloadPortraitIfMissing(playerId, strippedresref);
@@ -660,7 +669,7 @@ function CHAT:DoPrint(text, type, resref, playerId, isPlayer, objectId)
 			
 			local objects = {};
 			local players = {};
-			objects[objectId] = NWN.GetGameObject(objectId);
+			objects[objectId] = obj;
 			
 			if isPlayer then
 				players[playerId] = NWN.GetPlayer(playerId);
