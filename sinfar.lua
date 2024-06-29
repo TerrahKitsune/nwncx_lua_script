@@ -1095,13 +1095,23 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 
 	local obj = NWN.GetPlayer(playerid);
 		
-	if not obj or not NWN.GetArea() then
+	if not obj then
+		return ori;
+	elseif not NWN.GetArea() then
+		print("DownloadPortraitIfMissing: Area not valid");
 		return ori;
 	end 
 
-	local characterid = obj.Id.."_"..obj.ObjectId;
+	local me = NWN.GetPlayer();
+	
+	if not me then
+		print("DownloadPortraitIfMissing: Player not valid");
+		return ori;
+	end
 
-	if self.Portraits[characterid] then	
+	local characterid = obj.Id.."_"..me.Id.."_"..obj.ObjectId;
+
+	if self.Portraits[characterid] then
 		return self.Portraits[characterid];
 	elseif self.CO[characterid] then
 		return ori;
@@ -1109,7 +1119,7 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 
 	if not self:IsSinfar() then
 		self.Portraits[characterid] = ori;
-		self.Print("DownloadPortraitIfMissing: not sinfar");
+		print("DownloadPortraitIfMissing: not sinfar");
 		return ori;
 	end
 
@@ -1124,11 +1134,10 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 		end
 	end
 	
+	print("DownloadPortraitIfMissing: "..characterid.." use: "..ori);
 	self.Portraits[characterid] = ori;
 	
 	local co = coroutine.create(function ()
-	
-		local characterid = obj.Id.."_"..obj.ObjectId;
 	
 		local update = self:UpdatePlayerInfo(obj.Name); 
 	
@@ -1153,6 +1162,7 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 	
 		if not portrait then 
 			self.Portraits[characterid] = ori;
+			print("DownloadPortraitIfMissing: "..characterid.." missing update: "..ori);
 			self.Print("Missing portrait "..obj.CharacterName);
 			return;
 		end
@@ -1167,8 +1177,11 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 
 			if gameObject.Portrait ~= portrait then	
 				NWN.SetPortrait(obj.ObjectId, portrait);
+				print("DownloadPortraitIfMissing: "..characterid.." exists update texture: "..portrait);
+			else
+				print("DownloadPortraitIfMissing: "..characterid.." exists update: "..portrait);
 			end
-			
+
 			self.Portraits[characterid] = portrait;
 			return;
 		end 
@@ -1182,7 +1195,11 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 		if NWN.UpdatePortraitResourceDirectory() and self:HasPortraitResources(portrait) then
 			if gameObject.Portrait ~= portrait then	
 				NWN.SetPortrait(obj.ObjectId, portrait);
+				print("DownloadPortraitIfMissing: "..characterid.." exists update texture: "..portrait);
+			else
+				print("DownloadPortraitIfMissing: "..characterid.." exists update: "..portrait);
 			end
+			
 			self.Portraits[characterid] = portrait;
 			return;
 		end
@@ -1215,6 +1232,7 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 		local f = io.open(self:GetPortraitFolder()..portrait..".jpg", "wb");
 		if not f then 
 			self.Print("Failed to open file for write "..self:GetPortraitFolder()..portrait..".jpg");
+			print("DownloadPortraitIfMissing: "..characterid.." failed update: "..ori);
 			self.Portraits[characterid] = ori;
 			return;
 		end
@@ -1228,11 +1246,16 @@ function sinfar:DownloadPortraitIfMissing(playerid, ori)
 		if NWN.PortraitConvert(portrait) and self:HasPortraitResources(portrait) then 
 			if gameObject.Portrait ~= portrait then	
 				NWN.SetPortrait(obj.ObjectId, portrait);
+				print("DownloadPortraitIfMissing: "..characterid.." exists update texture: "..portrait);
+			else
+				print("DownloadPortraitIfMissing: "..characterid.." exists update: "..portrait);
 			end
+			
 			self.Portraits[characterid] = portrait;
 			self.Print("Portrait converted: "..portrait);
 		else 	
 			self.Portraits[characterid] = ori;
+			print("DownloadPortraitIfMissing: "..characterid.." failed update: "..ori);
 			self.Print("Failed to convert portrait "..portrait);
 		end
 		
