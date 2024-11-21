@@ -60,8 +60,14 @@ local function GetRemoteVersion()
 	return nil;
 end
 
+local function VersionToNumber(verString)
+	local ver = verString:gsub("%D", ""):gsub("^0+", "");
+	return tonumber(ver);
+end
+
 local function DoUpdateCheck()
 
+	print("Ver: "..GetVersion());
 	local remVer = GetRemoteVersion();
 
 	if remVer == nil then 
@@ -69,7 +75,7 @@ local function DoUpdateCheck()
 		return;
 	end
 
-	if GetVersion() == remVer then
+	if VersionToNumber(GetVersion()) >= VersionToNumber(remVer) then
 		Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/core.lua", FOLDER.."core.lua");
 		Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/chat.lua", FOLDER.."chat.lua");
 		Download("https://raw.githubusercontent.com/TerrahKitsune/nwncx_lua_script/main/color.lua", FOLDER.."color.lua");
